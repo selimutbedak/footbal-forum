@@ -1,26 +1,18 @@
 
 const memoryCache = new Map();
 
-const CACHE_TTL = {
+const TTL = {
   leagues: 6 * 60 * 60 * 1000,
-  fixtures: 5 * 60 * 1000,
-  livescores: 60 * 1000,
-  statistics: 5 * 60 * 1000,
-  lineups: 15 * 60 * 1000,
-  players: 15 * 60 * 1000,
-  h2h: 6 * 60 * 60 * 1000,
-  openliga: 10 * 60 * 1000
+  matches: 60 * 1000,
+  details: 5 * 60 * 1000
 };
 
 function getCache(key) {
   const item = memoryCache.get(key);
-  if (!item) return null;
-
-  if (Date.now() > item.expires) {
+  if (!item || Date.now() > item.expires) {
     memoryCache.delete(key);
     return null;
   }
-
   return item.data;
 }
 
@@ -29,15 +21,6 @@ function saveCache(key, data, ttl) {
     data,
     expires: Date.now() + ttl
   });
-}
-
-function jakartaDate() {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Jakarta",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit"
-  }).format(new Date());
 }
 
 async function requestJSON(url, headers = {}) {
@@ -62,18 +45,30 @@ async function requestJSON(url, headers = {}) {
 
 async function cachedRequest(key, ttl, request) {
   const cached = getCache(key);
-  if (cached) {
-    return { ...cached, _cache: "HIT" };
-  }
+  if (cached) return cached;
 
-  try {
-    const data = await request();
-    saveCache(key, data, ttl);
-    return { ...data, _cache: "MISS" };
-  } catch (error) {
-    // Jangan mengembalikan data kosong seolah-olah valid.
-    throw error;
-  }
+  const data = await request();
+  saveCache(key, data, ttl);
+  return data;
+}
+
+function getJakartaDate() {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Jakarta",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).format(new Date());
+}
+
+function sendError(res, error) {
+  console.error("FOOTBALL API ERROR:", error);
+
+  return res.status(error.status || 500).json({
+    error: "Gagal mengambil data sepak bola",
+    message: error.message,
+    providerError: error.data || null
+  });
 }
 
 export default async function handler(req, res) {
@@ -81,10 +76,7 @@ export default async function handler(req, res) {
   const source = String(req.query.source || "api-football");
 
   try {
-    // =========================================
-    // 1. HIGHLIGHTLY
-    // =========================================
-
+    // HIGHLIGHTLY
     if (source === "highlightly") {
       const key = process.env.HIGHLIGHTLY_API_KEY;
 
@@ -94,38 +86,64 @@ export default async function handler(req, res) {
         });
       }
 
-      const id = req.query.id;
-      const team1 = req.query.team1;
-      const team2 = req.query.team2;
-
-      const routes = {
-        "hl-matches": "/matches",
-        "hl-leagues": "/leagues",
-        "hl-players": "/players"
-      };
-
-      let path = routes[type];
       const params = new URLSearchParams();
+      let path = "";
 
-      if (type === "hl-statistics" ||
-          type === "hl-lineups" ||
-          type === "hl-events") {
+      if (type === "hl-leagues") {
+        path = "/leagues";
+
+        if (req.query.season) {
+          params.set("season", req.query.season);
+        }
+
+        if (req.query.countryCode) {
+          params.set("countryCode", req.query.countryCode);
+        }
+      }
+
+      else if (type === "hl-matches") {
+        path = "/matches";
+
+        // Minimal satu parameter wajib diberikan.
+        params.set("date", req.query.date || getJakartaDate());
+
+        if (req.query.leagueId) {
+          params.set("leagueId", req.query.leagueId);
+        }
+
+        if (req.query.countryCode) {
+          params.set("countryCode", req.query.countryCode);
+        }
+
+        if (req.query.limit) {
+          params.set("limit", req.query.limit);
+        }
+      }
+
+      else if (
+        ["hl-statistics", "hl-lineups", "hl-events"].includes(type)
+      ) {
+        const id = req.query.id;
+
         if (!id) {
           return res.status(400).json({
             error: "Parameter id wajib diisi"
           });
         }
 
-        const route = {
+        const endpoint = {
           "hl-statistics": "statistics",
           "hl-lineups": "lineups",
           "hl-events": "events"
         }[type];
 
-        path = `/${route}/${encodeURIComponent(id)}`;
+        path = `/${endpoint}/${encodeURIComponent(id)}`;
       }
 
-      if (type === "hl-h2h") {
+      else if (type === "hl-h2h") {
+        const team1 = req.query.team1;
+        const team2 = req.query.team2;
+
         if (!team1 || !team2) {
           return res.status(400).json({
             error: "Parameter team1 dan team2 wajib diisi"
@@ -137,40 +155,7 @@ export default async function handler(req, res) {
         params.set("teamIdTwo", team2);
       }
 
-      if (type === "hl-matches") {
-        if (req.query.date) {
-          params.set("date", req.query.date);
-        }
-        if (req.query.leagueId) {
-          params.set("leagueId", req.query.leagueId);
-        }
-        if (req.query.countryCode) {
-          params.set("countryCode", req.query.countryCode);
-        }
-        if (req.query.limit) {
-          params.set("limit", req.query.limit);
-        }
-      }
-
-      if (type === "hl-leagues") {
-        if (req.query.season) {
-          params.set("season", req.query.season);
-        }
-        if (req.query.countryCode) {
-          params.set("countryCode", req.query.countryCode);
-        }
-      }
-
-      if (type === "hl-players") {
-        if (req.query.name) {
-          params.set("name", req.query.name);
-        }
-        if (req.query.limit) {
-          params.set("limit", req.query.limit);
-        }
-      }
-
-      if (!path) {
+      else {
         return res.status(400).json({
           error: "Jenis Highlightly tidak valid"
         });
@@ -180,17 +165,14 @@ export default async function handler(req, res) {
       const url = `https://soccer.highlightly.net${path}` +
         (query ? `?${query}` : "");
 
-      const cacheKey = `highlightly:${url}`;
-      const ttl = type === "hl-statistics"
-        ? CACHE_TTL.statistics
-        : type === "hl-lineups"
-        ? CACHE_TTL.lineups
-        : type === "hl-h2h"
-        ? CACHE_TTL.h2h
-        : CACHE_TTL.fixtures;
+      const ttl = type === "hl-leagues"
+        ? TTL.leagues
+        : type === "hl-matches"
+        ? TTL.matches
+        : TTL.details;
 
       const data = await cachedRequest(
-        cacheKey,
+        `highlightly:${url}`,
         ttl,
         () => requestJSON(url, {
           "x-rapidapi-key": key
@@ -209,18 +191,14 @@ export default async function handler(req, res) {
       });
     }
 
-    // =========================================
-    // 2. OPENLIGADB
-    // =========================================
-
+    // OPENLIGADB
     if (source === "openligadb") {
       const league = req.query.league;
       const season = req.query.season;
 
       if (!league || !season) {
         return res.status(400).json({
-          error: "Parameter league dan season wajib diisi",
-          example: "?source=openligadb&type=matches&league=bl1&season=2026"
+          error: "Parameter league dan season wajib diisi"
         });
       }
 
@@ -237,15 +215,11 @@ export default async function handler(req, res) {
       }
 
       const url = `https://api.openligadb.de${path}`;
+
       const data = await cachedRequest(
         `openligadb:${url}`,
-        CACHE_TTL.openliga,
+        TTL.matches,
         () => requestJSON(url)
-      );
-
-      res.setHeader(
-        "Cache-Control",
-        "s-maxage=300, stale-while-revalidate=600"
       );
 
       return res.status(200).json({
@@ -255,10 +229,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // =========================================
-    // 3. API-FOOTBALL
-    // =========================================
-
+    // API-FOOTBALL
     if (source !== "api-football") {
       return res.status(400).json({
         error: "Sumber API tidak dikenal"
@@ -269,7 +240,7 @@ export default async function handler(req, res) {
 
     if (!apiKey) {
       return res.status(500).json({
-        error: "API_FOOTBALL_KEY belum dipasang di Vercel"
+        error: "API_FOOTBALL_KEY belum dipasang"
       });
     }
 
@@ -295,18 +266,16 @@ export default async function handler(req, res) {
       `https://v3.football.api-sports.io/${endpoints[type]}`
     );
 
-    const params = {};
-
-    if (["fixtures", "livescores", "fixture"].includes(type)) {
-      params.timezone = "Asia/Jakarta";
-    }
+    const params = {
+      timezone: "Asia/Jakarta"
+    };
 
     if (type === "leagues") {
       params.current = "true";
     }
 
     if (type === "fixtures") {
-      params.date = req.query.date || jakartaDate();
+      params.date = req.query.date || getJakartaDate();
       params.league = req.query.league;
       params.season = req.query.season;
     }
@@ -319,7 +288,9 @@ export default async function handler(req, res) {
       params.id = req.query.id;
     }
 
-    if (["statistics", "lineups", "players", "predictions"].includes(type)) {
+    if (
+      ["statistics", "lineups", "players", "predictions"].includes(type)
+    ) {
       params.fixture = req.query.fixture;
     }
 
@@ -349,31 +320,12 @@ export default async function handler(req, res) {
       }
     }
 
-    const cacheKey = `api-football:${url.toString()}`;
-
-    const ttl = type === "leagues"
-      ? CACHE_TTL.leagues
-      : type === "livescores"
-      ? CACHE_TTL.livescores
-      : type === "statistics"
-      ? CACHE_TTL.statistics
-      : type === "lineups"
-      ? CACHE_TTL.lineups
-      : type === "h2h"
-      ? CACHE_TTL.h2h
-      : CACHE_TTL.fixtures;
-
     const data = await cachedRequest(
-      cacheKey,
-      ttl,
+      `api-football:${url}`,
+      type === "leagues" ? TTL.leagues : TTL.matches,
       () => requestJSON(url.toString(), {
         "x-apisports-key": apiKey
       })
-    );
-
-    res.setHeader(
-      "Cache-Control",
-      "s-maxage=60, stale-while-revalidate=300"
     );
 
     return res.status(200).json({
@@ -382,12 +334,6 @@ export default async function handler(req, res) {
     });
 
   } catch (error) {
-    console.error("FOOTBALL API ERROR:", error);
-
-    return res.status(error.status || 500).json({
-      error: "Gagal mengambil data sepak bola",
-      message: error.message,
-      providerError: error.data || null
-    });
+    return sendError(res, error);
   }
 }
