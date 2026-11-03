@@ -4,40 +4,48 @@ export default async function handler(req, res) {
 
   if (!token) {
     return res.status(500).json({
-      error: "Sportmonks API token belum dikonfigurasi"
+      error: "SPORTMONKS_API_TOKEN belum dipasang"
     });
   }
 
-  const allowedTypes = ["livescores", "fixtures", "players"];
-
   const type = req.query.type || "livescores";
 
-  if (!allowedTypes.includes(type)) {
+  const endpoints = {
+    livescores: "livescores/inplay",
+    fixtures: "livescores",
+    players: "players"
+  };
+
+  if (!endpoints[type]) {
     return res.status(400).json({
       error: "Jenis data tidak valid"
     });
   }
 
-  let endpoint = "";
-
-  if (type === "livescores") {
-    endpoint = "livescores";
-  } else if (type === "fixtures") {
-    endpoint = "fixtures";
-  } else if (type === "players") {
-    endpoint = "players";
-  }
-
   try {
-    const response = await fetch(
-      `https://api.sportmonks.com/v3/football/${endpoint}?api_token=${encodeURIComponent(token)}`
+    const url = new URL(
+      `https://api.sportmonks.com/v3/football/${endpoints[type]}`
     );
 
+    url.searchParams.set("api_token", token);
+
+    if (type === "livescores") {
+      url.searchParams.set(
+        "include",
+        "participants;scores;events;league;state"
+      );
+    }
+
+    if (type === "fixtures") {
+      url.searchParams.set("include", "participants;scores;league;state");
+    }
+
+    const response = await fetch(url);
     const data = await response.json();
 
     if (!response.ok) {
       return res.status(response.status).json({
-        error: "Sportmonks API request gagal",
+        error: "Sportmonks API gagal",
         details: data
       });
     }
@@ -46,7 +54,8 @@ export default async function handler(req, res) {
 
   } catch (error) {
     return res.status(500).json({
-      error: "Gagal menghubungi Sportmonks"
+      error: "Gagal menghubungi Sportmonks",
+      details: error.message
     });
   }
 }
