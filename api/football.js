@@ -1,19 +1,19 @@
 
 export default async function handler(req, res) {
-  const token = process.env.SPORTMONKS_API_TOKEN;
+  const apiKey = process.env.API_FOOTBALL_KEY;
 
-  if (!token) {
+  if (!apiKey) {
     return res.status(500).json({
-      error: "SPORTMONKS_API_TOKEN belum dipasang"
+      error: "API_FOOTBALL_KEY belum dipasang di Vercel"
     });
   }
 
-  const type = req.query.type || "livescores";
+  const type = req.query.type || "fixtures";
 
   const endpoints = {
-    livescores: "livescores/inplay",
-    fixtures: "livescores",
-    players: "players"
+    fixtures: "fixtures",
+    livescores: "fixtures",
+    leagues: "leagues"
   };
 
   if (!endpoints[type]) {
@@ -24,37 +24,36 @@ export default async function handler(req, res) {
 
   try {
     const url = new URL(
-      `https://api.sportmonks.com/v3/football/${endpoints[type]}`
+      `https://v3.football.api-sports.io/${endpoints[type]}`
     );
 
-    url.searchParams.set("api_token", token);
+    // Zona waktu Indonesia
+    url.searchParams.set("timezone", "Asia/Jakarta");
 
     if (type === "livescores") {
-      url.searchParams.set(
-        "include",
-        "participants;scores;events;league;state"
-      );
+      url.searchParams.set("live", "all");
     }
 
     if (type === "fixtures") {
-      url.searchParams.set("include", "participants;scores;league;state");
+      url.searchParams.set(
+        "date",
+        req.query.date || new Date().toISOString().slice(0, 10)
+      );
     }
 
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      headers: {
+        "x-apisports-key": apiKey
+      }
+    });
+
     const data = await response.json();
 
-    if (!response.ok) {
-      return res.status(response.status).json({
-        error: "Sportmonks API gagal",
-        details: data
-      });
-    }
-
-    return res.status(200).json(data);
+    return res.status(response.status).json(data);
 
   } catch (error) {
     return res.status(500).json({
-      error: "Gagal menghubungi Sportmonks",
+      error: "Gagal menghubungi API-Football",
       details: error.message
     });
   }
