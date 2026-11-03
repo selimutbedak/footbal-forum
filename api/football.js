@@ -3,25 +3,25 @@ const cache = new Map();
 
 const TTL = {
   leagues: 6 * 60 * 60 * 1000,
-  matches: 30 * 1000,
-  details: 2 * 60 * 1000
+  matches: 45 * 1000,
+  details: 5 * 60 * 1000
 };
 
-function getJakartaDate() {
+function jakartaDate(offset = 0) {
+  const date = new Date(Date.now() + offset * 86400000);
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Jakarta",
     year: "numeric",
     month: "2-digit",
     day: "2-digit"
-  }).formatToParts(new Date());
+  }).formatToParts(date);
 
   const p = {};
   parts.forEach(x => p[x.type] = x.value);
-
   return `${p.year}-${p.month}-${p.day}`;
 }
 
-function getCached(key) {
+function cached(key) {
   const item = cache.get(key);
   if (!item || Date.now() > item.expires) {
     cache.delete(key);
@@ -30,7 +30,7 @@ function getCached(key) {
   return item.data;
 }
 
-function setCached(key, data, ttl) {
+function saveCache(key, data, ttl) {
   cache.set(key, {
     data,
     expires: Date.now() + ttl
@@ -39,9 +39,7 @@ function setCached(key, data, ttl) {
 
 async function requestJSON(url, key) {
   const response = await fetch(url, {
-    headers: {
-      "x-rapidapi-key": key
-    },
+    headers: { "x-rapidapi-key": key },
     signal: AbortSignal.timeout(15000)
   });
 
@@ -75,7 +73,7 @@ export default async function handler(req, res) {
 
   if (source !== "highlightly") {
     return res.status(400).json({
-      error: "Sumber data yang digunakan adalah Highlightly"
+      error: "Sumber data harus Highlightly"
     });
   }
 
@@ -103,30 +101,39 @@ export default async function handler(req, res) {
       if (req.query.countryCode) {
         params.set("countryCode", req.query.countryCode);
       }
+
+      params.set("limit", req.query.limit || "100");
     }
 
     else if (type === "hl-matches") {
       path = "/matches";
       ttl = TTL.matches;
 
-      params.set("date", req.query.date || getJakartaDate());
+      params.set("date", req.query.date || jakartaDate());
+      params.set("timezone", "Asia/Jakarta");
+      params.set("limit", req.query.limit || "100");
+      params.set("offset", req.query.offset || "0");
 
-      if (req.query.leagueId) {
-        params.set("leagueId", req.query.leagueId);
-      }
-
-      if (req.query.countryCode) {
-        params.set("countryCode", req.query.countryCode);
-      }
-
-      if (req.query.limit) {
-        params.set("limit", req.query.limit);
-      }
+      [
+        "leagueId",
+        "season",
+        "countryCode",
+        "homeTeamId",
+        "awayTeamId"
+      ].forEach(name => {
+        if (req.query[name]) {
+          params.set(name, String(req.query[name]));
+        }
+      });
     }
 
-    else if (
-      ["hl-statistics", "hl-lineups", "hl-events"].includes(type)
-    ) {
+    else if ([
+      "hl-statistics",
+      "hl-lineups",
+      "hl-events",
+      "hl-boxscore",
+      "hl-match"
+    ].includes(type)) {
       const id = req.query.id;
 
       if (!id) {
@@ -135,13 +142,15 @@ export default async function handler(req, res) {
         });
       }
 
-      const endpoint = {
+      const endpoints = {
         "hl-statistics": "statistics",
         "hl-lineups": "lineups",
-        "hl-events": "events"
-      }[type];
+        "hl-events": "events",
+        "hl-boxscore": "box-score",
+        "hl-match": "matches"
+      };
 
-      path = `/${endpoint}/${encodeURIComponent(id)}`;
+      path = `/${endpoints[type]}/${encodeURIComponent(id)}`;
     }
 
     else if (type === "hl-h2h") {
@@ -166,15 +175,16 @@ export default async function handler(req, res) {
     }
 
     const query = params.toString();
-    const url = `https://soccer.highlightly.net${path}` +
+    const url =
+      `https://soccer.highlightly.net${path}` +
       (query ? `?${query}` : "");
 
     const cacheKey = `highlightly:${url}`;
-    let data = getCached(cacheKey);
+    let data = cached(cacheKey);
 
     if (data === null) {
       data = await requestJSON(url, key);
-      setCached(cacheKey, data, ttl);
+      saveCache(cacheKey, data, ttl);
     }
 
     res.setHeader(
