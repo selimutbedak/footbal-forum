@@ -3,8 +3,8 @@ const cache = new Map();
 
 const TTL = {
   leagues: 6 * 60 * 60 * 1000,
-  matches: 45 * 1000,
-  details: 5 * 60 * 1000
+  matches: 30 * 1000,
+  details: 2 * 60 * 1000
 };
 
 function jakartaDate(offset = 0) {
@@ -15,13 +15,12 @@ function jakartaDate(offset = 0) {
     month: "2-digit",
     day: "2-digit"
   }).formatToParts(date);
-
   const p = {};
   parts.forEach(x => p[x.type] = x.value);
   return `${p.year}-${p.month}-${p.day}`;
 }
 
-function cached(key) {
+function getCached(key) {
   const item = cache.get(key);
   if (!item || Date.now() > item.expires) {
     cache.delete(key);
@@ -30,11 +29,8 @@ function cached(key) {
   return item.data;
 }
 
-function saveCache(key, data, ttl) {
-  cache.set(key, {
-    data,
-    expires: Date.now() + ttl
-  });
+function setCached(key, data, ttl) {
+  cache.set(key, { data, expires: Date.now() + ttl });
 }
 
 async function requestJSON(url, key) {
@@ -43,11 +39,18 @@ async function requestJSON(url, key) {
     signal: AbortSignal.timeout(15000)
   });
 
-  const data = await response.json();
+  const text = await response.text();
+  let data;
+
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch {
+    throw new Error("Respons Highlightly bukan JSON yang valid.");
+  }
 
   if (!response.ok) {
     const error = new Error(
-      data?.message || `Highlightly error ${response.status}`
+      data?.message || data?.error || `Highlightly error ${response.status}`
     );
     error.status = response.status;
     error.data = data;
@@ -59,7 +62,6 @@ async function requestJSON(url, key) {
 
 function sendError(res, error) {
   console.error("FOOTBALL FORUM:", error);
-
   return res.status(error.status || 500).json({
     error: "Gagal mengambil data Highlightly",
     message: error.message,
@@ -73,15 +75,14 @@ export default async function handler(req, res) {
 
   if (source !== "highlightly") {
     return res.status(400).json({
-      error: "Sumber data harus Highlightly"
+      error: "Sumber data yang digunakan adalah Highlightly."
     });
   }
 
   const key = process.env.HIGHLIGHTLY_API_KEY;
-
   if (!key) {
     return res.status(500).json({
-      error: "HIGHLIGHTLY_API_KEY belum dipasang di Vercel"
+      error: "HIGHLIGHTLY_API_KEY belum dipasang di Vercel."
     });
   }
 
@@ -93,53 +94,38 @@ export default async function handler(req, res) {
     if (type === "hl-leagues") {
       path = "/leagues";
       ttl = TTL.leagues;
-
-      if (req.query.season) {
-        params.set("season", req.query.season);
-      }
-
-      if (req.query.countryCode) {
-        params.set("countryCode", req.query.countryCode);
-      }
-
-      params.set("limit", req.query.limit || "100");
+      if (req.query.season) params.set("season", req.query.season);
+      if (req.query.countryCode) params.set("countryCode", req.query.countryCode);
+      if (req.query.limit) params.set("limit", req.query.limit);
     }
 
     else if (type === "hl-matches") {
       path = "/matches";
       ttl = TTL.matches;
 
-      params.set("date", req.query.date || jakartaDate());
-      params.set("timezone", "Asia/Jakarta");
-      params.set("limit", req.query.limit || "100");
-      params.set("offset", req.query.offset || "0");
+      if (req.query.date) params.set("date", req.query.date);
+      if (req.query.leagueId) params.set("leagueId", req.query.leagueId);
+      if (req.query.season) params.set("season", req.query.season);
+      if (req.query.countryCode) params.set("countryCode", req.query.countryCode);
+      if (req.query.timezone) params.set("timezone", req.query.timezone);
+      if (req.query.limit) params.set("limit", req.query.limit);
+      if (req.query.offset) params.set("offset", req.query.offset);
 
-      [
-        "leagueId",
-        "season",
-        "countryCode",
-        "homeTeamId",
-        "awayTeamId"
-      ].forEach(name => {
-        if (req.query[name]) {
-          params.set(name, String(req.query[name]));
-        }
-      });
+      if (!req.query.date && !req.query.leagueId && !req.query.countryCode) {
+        params.set("date", jakartaDate());
+      }
+
+      if (!params.has("timezone")) {
+        params.set("timezone", "Asia/Jakarta");
+      }
     }
 
-    else if ([
-      "hl-statistics",
-      "hl-lineups",
-      "hl-events",
-      "hl-boxscore",
-      "hl-match"
-    ].includes(type)) {
+    else if (
+      ["hl-statistics", "hl-lineups", "hl-events", "hl-boxscore", "hl-match"].includes(type)
+    ) {
       const id = req.query.id;
-
       if (!id) {
-        return res.status(400).json({
-          error: "Parameter id wajib diisi"
-        });
+        return res.status(400).json({ error: "Parameter id wajib diisi." });
       }
 
       const endpoints = {
@@ -159,7 +145,7 @@ export default async function handler(req, res) {
 
       if (!team1 || !team2) {
         return res.status(400).json({
-          error: "Parameter team1 dan team2 wajib diisi"
+          error: "Parameter team1 dan team2 wajib diisi."
         });
       }
 
@@ -169,35 +155,26 @@ export default async function handler(req, res) {
     }
 
     else {
-      return res.status(400).json({
-        error: "Jenis endpoint tidak dikenal"
-      });
+      return res.status(400).json({ error: "Jenis endpoint tidak dikenal." });
     }
 
     const query = params.toString();
-    const url =
-      `https://soccer.highlightly.net${path}` +
-      (query ? `?${query}` : "");
-
+    const url = `https://soccer.highlightly.net${path}${query ? `?${query}` : ""}`;
     const cacheKey = `highlightly:${url}`;
-    let data = cached(cacheKey);
 
+    let data = getCached(cacheKey);
     if (data === null) {
       data = await requestJSON(url, key);
-      saveCache(cacheKey, data, ttl);
+      setCached(cacheKey, data, ttl);
     }
 
-    res.setHeader(
-      "Cache-Control",
-      "s-maxage=30, stale-while-revalidate=60"
-    );
+    res.setHeader("Cache-Control", "s-maxage=30, stale-while-revalidate=60");
 
     return res.status(200).json({
       provider: "Highlightly",
       type,
       data
     });
-
   } catch (error) {
     return sendError(res, error);
   }
