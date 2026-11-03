@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#090909">
-
   <title>Football Forum</title>
 
   <style>
@@ -18,9 +17,7 @@
       --border: #303030;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
@@ -29,13 +26,8 @@
       font-family: Arial, Helvetica, sans-serif;
     }
 
-    button, input, select {
-      font: inherit;
-    }
-
-    button {
-      cursor: pointer;
-    }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
 
     .navbar {
       position: sticky;
@@ -57,9 +49,7 @@
       letter-spacing: -1px;
     }
 
-    .brand span {
-      color: var(--red);
-    }
+    .brand span { color: var(--red); }
 
     .nav-links {
       display: flex;
@@ -74,17 +64,17 @@
       font-weight: 800;
       font-size: 14px;
       padding: 8px 0;
+      white-space: nowrap;
     }
 
     .nav-links button.active,
-    .nav-links button:hover {
-      color: white;
-    }
+    .nav-links button:hover { color: white; }
 
     .container {
       width: min(1100px, 92%);
       margin: auto;
       padding: 30px 0 70px;
+      min-height: 75vh;
     }
 
     .hero {
@@ -117,9 +107,19 @@
 
     .hero-team {
       min-width: 0;
-      font-size: 19px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      font-size: 17px;
       font-weight: 800;
       overflow-wrap: anywhere;
+    }
+
+    .hero-team img,
+    .hero-team .team-fallback {
+      width: 55px;
+      height: 55px;
     }
 
     .hero-vs {
@@ -134,9 +134,7 @@
       font-size: 14px;
     }
 
-    .section {
-      margin-top: 45px;
-    }
+    .section { margin-top: 45px; }
 
     .section-title {
       display: flex;
@@ -154,12 +152,13 @@
       height: 42px;
       border-radius: 10px;
       background: var(--red);
+      flex-shrink: 0;
     }
 
     .empty {
       text-align: center;
       color: var(--muted);
-      padding: 55px 15px;
+      padding: 45px 15px;
       font-size: 17px;
     }
 
@@ -183,9 +182,19 @@
     }
 
     .match-league {
+      display: flex;
+      align-items: center;
+      gap: 9px;
       color: var(--muted);
       font-size: 13px;
       margin-bottom: 17px;
+    }
+
+    .league-mini-logo {
+      width: 25px;
+      height: 25px;
+      object-fit: contain;
+      flex-shrink: 0;
     }
 
     .match-content {
@@ -279,6 +288,9 @@
     }
 
     .league-card {
+      display: flex;
+      align-items: center;
+      gap: 15px;
       padding: 20px;
       background: var(--panel);
       border: 1px solid var(--border);
@@ -286,9 +298,16 @@
       cursor: pointer;
     }
 
-    .league-card:hover {
-      border-color: var(--red);
+    .league-card:hover { border-color: var(--red); }
+
+    .league-logo {
+      width: 48px;
+      height: 48px;
+      object-fit: contain;
+      flex-shrink: 0;
     }
+
+    .league-info { min-width: 0; }
 
     .league-card h3 {
       margin: 0 0 8px;
@@ -301,9 +320,13 @@
       font-size: 13px;
     }
 
-    .detail-top {
-      margin-bottom: 20px;
+    .league-unavailable {
+      font-size: 11px;
+      color: #d99a9a;
+      margin-top: 6px;
     }
+
+    .detail-top { margin-bottom: 20px; }
 
     .back-button {
       background: var(--panel2);
@@ -338,13 +361,8 @@
       height: 55px;
     }
 
-    .detail-score .team-name {
-      font-size: 15px;
-    }
-
-    .detail-score .score {
-      font-size: 30px;
-    }
+    .detail-score .team-name { font-size: 15px; }
+    .detail-score .score { font-size: 30px; }
 
     .detail-info {
       background: var(--panel);
@@ -363,13 +381,8 @@
       font-size: 14px;
     }
 
-    .info-row:last-child {
-      border-bottom: 0;
-    }
-
-    .info-row span:first-child {
-      color: var(--muted);
-    }
+    .info-row:last-child { border-bottom: 0; }
+    .info-row span:first-child { color: var(--muted); }
 
     .table-wrap {
       overflow-x: auto;
@@ -397,8 +410,20 @@
     }
 
     td:nth-child(2),
-    th:nth-child(2) {
-      text-align: left;
+    th:nth-child(2) { text-align: left; }
+
+    .table-team {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 160px;
+    }
+
+    .table-team img {
+      width: 27px;
+      height: 27px;
+      object-fit: contain;
+      flex-shrink: 0;
     }
 
     .loading {
@@ -431,17 +456,10 @@
         overflow-x: auto;
       }
 
-      .brand {
-        font-size: 22px;
-      }
+      .brand { font-size: 22px; }
+      .nav-links { gap: 17px; }
 
-      .nav-links {
-        gap: 17px;
-      }
-
-      .nav-links button {
-        font-size: 12px;
-      }
+      .nav-links button { font-size: 12px; }
 
       .container {
         width: 92%;
@@ -453,25 +471,12 @@
         padding: 22px 15px;
       }
 
-      .hero-team {
-        font-size: 15px;
-      }
+      .hero-team { font-size: 14px; }
+      .section-title { font-size: 22px; }
+      .league-grid { grid-template-columns: 1fr; }
 
-      .section-title {
-        font-size: 22px;
-      }
-
-      .league-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .team {
-        gap: 6px;
-      }
-
-      .team-name {
-        font-size: 12px;
-      }
+      .team { gap: 6px; }
+      .team-name { font-size: 12px; }
 
       .team-logo,
       .team-fallback {
@@ -488,7 +493,6 @@
 </head>
 
 <body>
-
   <header class="navbar">
     <div class="brand">FOOTBALL<span>FORUM</span></div>
 
@@ -530,19 +534,17 @@
     let currentPage = "home";
     let selectedDate = jakartaDate();
     let selectedLeague = "ALL";
-    let currentMatch = null;
+    let leagueData = [];
 
     const app = document.getElementById("app");
 
     function jakartaDate() {
-      const parts = new Intl.DateTimeFormat("en-CA", {
+      return new Intl.DateTimeFormat("en-CA", {
         timeZone: "Asia/Jakarta",
         year: "numeric",
         month: "2-digit",
         day: "2-digit"
       }).format(new Date());
-
-      return parts;
     }
 
     function escapeHTML(value) {
@@ -557,7 +559,6 @@
 
     async function api(params = {}) {
       const query = new URLSearchParams(params);
-
       const response = await fetch(`${API}?${query.toString()}`);
       const result = await response.json();
 
@@ -620,23 +621,27 @@
       `;
     }
 
+    function leagueLogo(url, name) {
+      if (url) {
+        return `
+          <img
+            class="league-mini-logo"
+            src="${escapeHTML(url)}"
+            alt="${escapeHTML(name)}"
+            loading="lazy"
+            onerror="this.style.display='none'"
+          >
+        `;
+      }
+
+      return "";
+    }
+
     function matchStatus(match) {
-      if (match.live) {
-        return `<span class="live">● LIVE</span>`;
-      }
-
-      if (match.finished) {
-        return "FULL TIME";
-      }
-
-      if (match.status === "POSTPONED") {
-        return "POSTPONED";
-      }
-
-      if (match.status === "CANCELLED") {
-        return "CANCELLED";
-      }
-
+      if (match.live) return `<span class="live">● LIVE</span>`;
+      if (match.finished) return "FULL TIME";
+      if (match.status === "POSTPONED") return "POSTPONED";
+      if (match.status === "CANCELLED") return "CANCELLED";
       return formatTime(match.date);
     }
 
@@ -653,12 +658,19 @@
       return "VS";
     }
 
+    function sectionTitle(title) {
+      return `<h2 class="section-title">${escapeHTML(title)}</h2>`;
+    }
+
     function matchCard(match) {
       return `
         <article class="match-card" onclick="openMatch(${Number(match.id)})">
           <div class="match-league">
-            ${escapeHTML(match.league)}
-            ${match.country ? " · " + escapeHTML(match.country) : ""}
+            ${leagueLogo(match.leagueLogo, match.league)}
+            <span>
+              ${escapeHTML(match.league)}
+              ${match.country ? " · " + escapeHTML(match.country) : ""}
+            </span>
           </div>
 
           <div class="match-content">
@@ -683,25 +695,18 @@
       `;
     }
 
-    function sectionTitle(title) {
-      return `<h2 class="section-title">${escapeHTML(title)}</h2>`;
-    }
-
     function setActiveNav(page) {
       document.querySelectorAll(".nav-links button").forEach(button => {
         button.classList.remove("active");
       });
 
       const active = document.getElementById(`nav-${page}`);
-
       if (active) active.classList.add("active");
     }
 
     async function showPage(page) {
       currentPage = page;
-      currentMatch = null;
       setActiveNav(page);
-
       app.innerHTML = `<div class="loading">Memuat data...</div>`;
 
       try {
@@ -710,7 +715,7 @@
         } else if (page === "matches") {
           await renderMatches();
         } else if (page === "leagues") {
-          renderLeagues();
+          await renderLeagues();
         }
       } catch (error) {
         showError(error);
@@ -726,9 +731,18 @@
       });
 
       const matches = data.matches || [];
-      const live = matches.filter(match => match.live);
+      const upcoming = data.upcoming || [];
+      const live = data.live || [];
 
-      const featured = matches.find(match => !match.finished) || matches[0];
+      const featured =
+        matches.find(match => !match.finished) ||
+        upcoming[0] ||
+        matches[0];
+
+      const visibleMatches = matches.length ? matches : upcoming;
+      const matchHeading = matches.length
+        ? "TODAY'S MATCHES"
+        : "UPCOMING MATCHES";
 
       app.innerHTML = `
         ${featured ? `
@@ -738,9 +752,17 @@
             </div>
 
             <div class="hero-teams">
-              <div class="hero-team">${escapeHTML(featured.home)}</div>
+              <div class="hero-team">
+                ${teamLogo(featured.homeLogo, featured.home)}
+                <span>${escapeHTML(featured.home)}</span>
+              </div>
+
               <div class="hero-vs">VS</div>
-              <div class="hero-team">${escapeHTML(featured.away)}</div>
+
+              <div class="hero-team">
+                ${teamLogo(featured.awayLogo, featured.away)}
+                <span>${escapeHTML(featured.away)}</span>
+              </div>
             </div>
 
             <div class="hero-bottom">
@@ -760,11 +782,11 @@
         </section>
 
         <section class="section">
-          ${sectionTitle("TODAY'S MATCHES")}
+          ${sectionTitle(matchHeading)}
 
-          ${matches.length
-            ? `<div class="match-list">${matches.map(matchCard).join("")}</div>`
-            : `<div class="empty">Tidak ada jadwal pertandingan pada tanggal ini.</div>`
+          ${visibleMatches.length
+            ? `<div class="match-list">${visibleMatches.map(matchCard).join("")}</div>`
+            : `<div class="empty">Belum ada jadwal pertandingan yang tersedia.</div>`
           }
         </section>
       `;
@@ -802,7 +824,6 @@
 
     async function loadMatches() {
       const results = document.getElementById("matches-results");
-
       if (!results) return;
 
       results.innerHTML = `<div class="loading">Memuat pertandingan...</div>`;
@@ -817,7 +838,7 @@
 
         results.innerHTML = matches.length
           ? `<div class="match-list">${matches.map(matchCard).join("")}</div>`
-          : `<div class="empty">Tidak ada pertandingan ditemukan.</div>`;
+          : `<div class="empty">Tidak ada pertandingan ditemukan pada tanggal ini.</div>`;
 
       } catch (error) {
         results.innerHTML = `<div class="error">${escapeHTML(error.message)}</div>`;
@@ -826,7 +847,6 @@
 
     function changeDate(value) {
       if (!value) return;
-
       selectedDate = value;
       loadMatches();
     }
@@ -836,29 +856,56 @@
       loadMatches();
     }
 
-    function renderLeagues() {
+    async function renderLeagues() {
       app.innerHTML = `
         ${sectionTitle("LEAGUES")}
-
-        <div class="league-grid">
-          ${LEAGUES.map(league => `
-            <article class="league-card" onclick="openLeague('${league.id}')">
-              <h3>${escapeHTML(league.name)}</h3>
-              <p>${escapeHTML(league.country)}</p>
-            </article>
-          `).join("")}
-        </div>
+        <div class="loading">Memuat kompetisi dan logo...</div>
       `;
+
+      try {
+        leagueData = await api({ type: "leagues" });
+
+        app.innerHTML = `
+          ${sectionTitle("LEAGUES")}
+
+          <div class="league-grid">
+            ${leagueData.map(league => `
+              <article class="league-card"
+                onclick="openLeague('${league.id}')">
+
+                ${
+                  league.emblem
+                    ? `<img
+                        class="league-logo"
+                        src="${escapeHTML(league.emblem)}"
+                        alt="${escapeHTML(league.name)}"
+                        loading="lazy"
+                        onerror="this.style.display='none'"
+                      >`
+                    : `<span class="team-fallback">${escapeHTML(initials(league.name))}</span>`
+                }
+
+                <div class="league-info">
+                  <h3>${escapeHTML(league.name)}</h3>
+                  <p>${escapeHTML(league.country)}</p>
+                  ${!league.available ? `<div class="league-unavailable">Data mungkin tidak tersedia pada paket API</div>` : ""}
+                </div>
+              </article>
+            `).join("")}
+          </div>
+        `;
+
+      } catch (error) {
+        showError(error);
+      }
     }
 
     async function openLeague(code) {
       const league = LEAGUES.find(item => item.id === code);
-
       if (!league) return;
 
       currentPage = "league-detail";
       app.innerHTML = `<div class="loading">Memuat klasemen...</div>`;
-
       window.scrollTo({ top: 0, behavior: "smooth" });
 
       try {
@@ -902,13 +949,27 @@
                   ${rows.map(row => `
                     <tr>
                       <td>${row.position}</td>
-                      <td>${escapeHTML(row.team?.shortName || row.team?.name || "-")}</td>
-                      <td>${row.playedGames}</td>
-                      <td>${row.won}</td>
-                      <td>${row.draw}</td>
-                      <td>${row.lost}</td>
-                      <td>${row.goalDifference}</td>
-                      <td><strong>${row.points}</strong></td>
+                      <td>
+                        <div class="table-team">
+                          ${
+                            row.team?.crest
+                              ? `<img
+                                  src="${escapeHTML(row.team.crest)}"
+                                  alt="${escapeHTML(row.team.name || "Club")}"
+                                  loading="lazy"
+                                  onerror="this.outerHTML='<span class=&quot;team-fallback&quot;>${initials(row.team?.name)}</span>'"
+                                >`
+                              : `<span class="team-fallback">${escapeHTML(initials(row.team?.name))}</span>`
+                          }
+                          <span>${escapeHTML(row.team?.shortName || row.team?.name || "-")}</span>
+                        </div>
+                      </td>
+                      <td>${row.playedGames ?? "-"}</td>
+                      <td>${row.won ?? "-"}</td>
+                      <td>${row.draw ?? "-"}</td>
+                      <td>${row.lost ?? "-"}</td>
+                      <td>${row.goalDifference ?? "-"}</td>
+                      <td><strong>${row.points ?? "-"}</strong></td>
                     </tr>
                   `).join("")}
                 </tbody>
@@ -927,7 +988,6 @@
     async function openMatch(id) {
       currentPage = "match-detail";
       app.innerHTML = `<div class="loading">Memuat detail pertandingan...</div>`;
-
       window.scrollTo({ top: 0, behavior: "smooth" });
 
       try {
@@ -936,16 +996,10 @@
           id
         });
 
-        currentMatch = data.fixture;
-
         const match = data.fixture;
-        const score = data.score || {};
         const goals = data.goals || [];
         const bookings = data.bookings || [];
         const substitutions = data.substitutions || [];
-
-        const homeName = match.home;
-        const awayName = match.away;
 
         app.innerHTML = `
           <div class="detail-top">
@@ -956,13 +1010,14 @@
 
           <div class="detail-score">
             <div class="match-league">
-              ${escapeHTML(match.league)} · ${formatDate(match.date)}
+              ${leagueLogo(match.leagueLogo, match.league)}
+              <span>${escapeHTML(match.league)} · ${formatDate(match.date)}</span>
             </div>
 
             <div class="match-content">
               <div class="team">
-                ${teamLogo(match.homeLogo, homeName)}
-                <span class="team-name">${escapeHTML(homeName)}</span>
+                ${teamLogo(match.homeLogo, match.home)}
+                <span class="team-name">${escapeHTML(match.home)}</span>
               </div>
 
               <div>
@@ -973,8 +1028,8 @@
               </div>
 
               <div class="team">
-                ${teamLogo(match.awayLogo, awayName)}
-                <span class="team-name">${escapeHTML(awayName)}</span>
+                ${teamLogo(match.awayLogo, match.away)}
+                <span class="team-name">${escapeHTML(match.away)}</span>
               </div>
             </div>
           </div>
