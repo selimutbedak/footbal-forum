@@ -11,12 +11,10 @@ export default async function handler(req, res) {
   const type = req.query.type || "fixtures";
 
   const endpoints = {
-    const endpoints = {
-  fixtures: "fixtures",
-  livescores: "fixtures",
-  leagues: "leagues",
-  statistics: "fixtures/statistics"
-};
+    fixtures: "fixtures",
+    livescores: "fixtures",
+    leagues: "leagues",
+    statistics: "fixtures/statistics"
   };
 
   if (!endpoints[type]) {
@@ -30,28 +28,33 @@ export default async function handler(req, res) {
       `https://v3.football.api-sports.io/${endpoints[type]}`
     );
 
-    // Zona waktu Indonesia
     url.searchParams.set("timezone", "Asia/Jakarta");
 
-   if (type === "livescores") {
-  url.searchParams.set("live", "all");
-}
-    
-    if (type === "statistics") {
-  if (!req.query.fixture) {
-    return res.status(400).json({
-      error: "ID pertandingan wajib diisi"
-    });
-  }
+    if (type === "livescores") {
+      url.searchParams.set("live", "all");
+    }
 
-  url.searchParams.set("fixture", req.query.fixture);
-}
+    if (type === "statistics") {
+      if (!req.query.fixture) {
+        return res.status(400).json({
+          error: "ID pertandingan wajib diisi"
+        });
+      }
+
+      url.searchParams.set("fixture", req.query.fixture);
     }
 
     if (type === "fixtures") {
+      const today = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Jakarta",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit"
+      }).format(new Date());
+
       url.searchParams.set(
         "date",
-        req.query.date || new Date().toISOString().slice(0, 10)
+        req.query.date || today
       );
     }
 
