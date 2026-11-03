@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FOOTBALL FORUM</title>
+
+<style>
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background: #f5f6f7;
+  color: #20252b;
+}
+
+header {
+  background: #fff;
+  border-bottom: 1px solid #ddd;
+  padding: 18px 6%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -1px;
+}
+
+.logo span {
+  color: #23834d;
+}
+
+nav {
+  display: flex;
+  gap: 22px;
+  flex-wrap: wrap;
+}
+
+nav button {
+  border: none;
+  background: none;
+  font-size: 14px;
+  color: #555;
+  cursor: pointer;
+  padding: 8px 0;
+}
+
+nav button.active {
+  color: #23834d;
+  font-weight: bold;
+  border-bottom: 2px solid #23834d;
+}
+
+main {
+  max-width: 1200px;
+  margin: 30px auto;
+  padding: 0 20px;
+}
+
+.heading {
+  margin-bottom: 25px;
+}
+
+.heading h1 {
+  font-size: 27px;
+  margin-bottom: 8px;
+}
+
+.heading p {
+  color: #777;
+  font-size: 14px;
+}
+
+.status {
+  display: inline-block;
+  background: #e8f5ed;
+  color: #23834d;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: bold;
+  margin-top: 12px;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.card {
+  background: white;
+  border: 1px solid #e5e5e5;
+  border-radius: 7px;
+  padding: 20px;
+}
+
+.card small {
+  color: #777;
+}
+
+.card h2 {
+  font-size: 27px;
+  margin-top: 12px;
+}
+
+.section {
+  background: white;
+  border: 1px solid #e5e5e5;
+  border-radius: 7px;
+  margin-bottom: 22px;
+  overflow: hidden;
+}
+
+.section-title {
+  padding: 18px 20px;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.section-title h2 {
+  font-size: 17px;
+}
+
+.section-title span {
+  font-size: 12px;
+  color: #888;
+}
+
+.toolbar {
+  display: flex;
+  gap: 10px;
+  padding: 15px 20px;
+  flex-wrap: wrap;
+}
+
+input, select {
+  padding: 11px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background: white;
+  font-size: 13px;
+}
+
+input {
+  flex: 1;
+  min-width: 150px;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+th {
+  background: #fafafa;
+  color: #777;
+  font-weight: 600;
+}
+
+th, td {
+  text-align: left;
+  padding: 14px 16px;
+  border-bottom: 1px solid #eee;
+}
+
+td {
+  color: #343a40;
+}
+
+tr:last-child td {
+  border-bottom: none;
+}
+
+tr:hover td {
+  background: #fafcfb;
+}
+
+.green {
+  color: #23834d;
+  font-weight: bold;
+}
+
+.live-dot {
+  color: #d84949;
+  font-weight: bold;
+}
+
+.view {
+  display: none;
+}
+
+.view.active {
+  display: block;
+}
+
+footer {
+  text-align: center;
+  color: #888;
+  padding: 30px;
+  font-size: 12px;
+}
+
+@media(max-width:700px) {
+  header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 15px;
+    padding: 17px 20px;
+  }
+
+  nav {
+    gap: 17px;
+  }
+
+  .stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .heading h1 {
+    font-size: 23px;
+  }
+
+  main {
+    padding: 0 13px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <div class="logo">FOOTBALL <span>FORUM</span></div>
+
+  <nav>
+    <button class="active" onclick="showPage('overview',this)">Overview</button>
+    <button onclick="showPage('live',this)">Live Scores</button>
+    <button onclick="showPage('players',this)">Players</button>
+  </nav>
+</header>
+
+<main>
+
+<!-- OVERVIEW -->
+
+<div id="overview" class="view active">
+
+  <div class="heading">
+    <h1>Football Overview</h1>
+    <p>Global football statistics and match center.</p>
+    <div class="status">DEMO DATA · API NOT CONNECTED</div>
+  </div>
+
+  <div class="stats">
+    <div class="card">
+      <small>Leagues</small>
+      <h2>Global</h2>
+    </div>
+
+    <div class="card">
+      <small>Matches</small>
+      <h2>--</h2>
+    </div>
+
+    <div class="card">
+      <small>Teams</small>
+      <h2>--</h2>
+    </div>
+
+    <div class="card">
+      <small>Players</small>
+      <h2>--</h2>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">
+      <h2>Match Center</h2>
+      <span>Demo fixtures</span>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Competition</th>
+            <th>Home</th>
+            <th>Score</th>
+            <th>Away</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr>
+            <td>Premier League</td>
+            <td>Arsenal</td>
+            <td>2 - 1</td>
+            <td>Chelsea</td>
+            <td>Demo</td>
+          </tr>
+          <tr>
+            <td>La Liga</td>
+            <td>Barcelona</td>
+            <td>1 - 0</td>
+            <td>Real Madrid</td>
+            <td>Demo</td>
+          </tr>
+          <tr>
+            <td>Serie A</td>
+            <td>Inter</td>
+            <td>2 - 2</td>
+            <td>Milan</td>
+            <td>Demo</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- LIVE SCORES -->
+
+<div id="live" class="view">
+
+  <div class="heading">
+    <h1>Live Scores</h1>
+    <p>Live football matches around the world.</p>
+    <div class="status">WAITING FOR API CONNECTION</div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">
+      <h2>Live Matches</h2>
+      <span>Sportmonks API</span>
+    </div>
+
+    <div class="card">
+      Live match data will appear here after API integration.
+    </div>
+  </div>
+
+</div>
+
+<!-- PLAYERS -->
+
+<div id="players" class="view">
+
+  <div class="heading">
+    <h1>Player Statistics</h1>
+    <p>Player performance, advanced metrics and season analysis.</p>
+    <div class="status">DEMO DATA · API NOT CONNECTED</div>
+  </div>
+
+  <div class="stats">
+    <div class="card">
+      <small>Total Players</small>
+      <h2>--</h2>
+    </div>
+    <div class="card">
+      <small>Goals</small>
+      <h2>--</h2>
+    </div>
+    <div class="card">
+      <small>Assists</small>
+      <h2>--</h2>
+    </div>
+    <div class="card">
+      <small>Minutes Played</small>
+      <h2>--</h2>
+    </div>
+  </div>
+
+  <div class="section">
+
+    <div class="section-title">
+      <h2>Player Performance</h2>
+      <span>Example statistics</span>
+    </div>
+
+    <div class="toolbar">
+      <input
+        type="text"
+        id="searchPlayer"
+        placeholder="Search player..."
+        oninput="filterPlayers()"
+      >
+
+      <select id="positionFilter" onchange="filterPlayers()">
+        <option value="All">All Positions</option>
+        <option value="Forward">Forward</option>
+        <option value="Midfielder">Midfielder</option>
+        <option value="Defender">Defender</option>
+      </select>
+    </div>
+
+    <div class="table-wrap">
+      <table id="playerTable">
+        <thead>
+          <tr>
+            <th>Player</th>
+            <th>Position</th>
+            <th>Matches</th>
+            <th>Goals</th>
+            <th>Assists</th>
+            <th>Minutes</th>
+            <th>Rating</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr>
+            <td>Example Player 1</td>
+            <td>Forward</td>
+            <td>--</td>
+            <td>--</td>
+            <td>--</td>
+            <td>--</td>
+            <td>--</td>
+          </tr>
+          <tr>
+            <td>Example Player 2</td>
+            <td>Midfielder</td>
+            <td>--</td>
+            <td>--</td>
+            <td>--</td>
+            <td>--</td>
+            <td>--</td>
+          </tr>
+          <tr>
+            <td>Example Player 3</td>
+            <td>Defender</td>
+            <td>--</td>
+            <td>--</td>
+            <td>--</td>
+            <td>--</td>
+            <td>--</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+</div>
+
+</main>
+
+<footer>
+  FOOTBALL FORUM · Global Football Data Platform
+</footer>
+
+<script>
+function showPage(page, button) {
+  document.querySelectorAll('.view').forEach(el => {
+    el.classList.remove('active');
+  });
+
+  document.getElementById(page).classList.add('active');
+
+  document.querySelectorAll('nav button').forEach(el => {
+    el.classList.remove('active');
+  });
+
+  button.classList.add('active');
+}
+
+function filterPlayers() {
+  const search = document.getElementById('searchPlayer')
+    .value.toLowerCase();
+
+  const position = document.getElementById('positionFilter').value;
+
+  document.querySelectorAll('#playerTable tbody tr').forEach(row => {
+    const name = row.cells[0].textContent.toLowerCase();
+    const role = row.cells[1].textContent;
+
+    const matchName = name.includes(search);
+    const matchPosition = position === 'All' || role === position;
+
+    row.style.display = matchName && matchPosition ? '' : 'none';
+  });
+}
+</script>
+
+</body>
+</html>
