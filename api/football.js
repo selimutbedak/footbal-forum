@@ -1,98 +1,223 @@
+
 "use strict";
 
-const API = "https://v3.football.api-sports.io";
-const OPEN = "https://raw.githubusercontent.com/openfootball/football.json/master";
-const cache = new Map();
+/*
+ * FOOTBALL FORUM - MULTI API BACKEND
+ * Providers:
+ * 1. API-Football
+ * 2. Highlightly
+ * 3. football-data.org
+ * 4. TheSportsDB
+ * 5. OpenLigaDB
+ * 6. OpenFootball
+ * 7. StatsBomb Open Data
+ */
 
-const LEAGUES = [
-  { country:"Argentina", flag:"🇦🇷", name:"Liga Profesional Argentina", id:128, file:"ar.1" },
-  { country:"Argentina", flag:"🇦🇷", name:"Primera Nacional", id:129, file:null },
-  { country:"Argentina", flag:"🇦🇷", name:"Copa Argentina", id:130, file:null },
-  { country:"Brazil", flag:"🇧🇷", name:"Brasileirão Série A", id:71, file:"br.1" },
-  { country:"Brazil", flag:"🇧🇷", name:"Brasileirão Série B", id:72, file:null },
-  { country:"England", flag:"🏴", name:"Premier League", id:39, file:"en.1" },
-  { country:"England", flag:"🏴", name:"Championship", id:40, file:"en.2" },
-  { country:"England", flag:"🏴", name:"League One", id:41, file:"en.3" },
-  { country:"England", flag:"🏴", name:"League Two", id:42, file:"en.4" },
-  { country:"France", flag:"🇫🇷", name:"Ligue 1", id:61, file:"fr.1" },
-  { country:"France", flag:"🇫🇷", name:"Ligue 2", id:62, file:"fr.2" },
-  { country:"Germany", flag:"🇩🇪", name:"Bundesliga", id:78, file:"de.1" },
-  { country:"Germany", flag:"🇩🇪", name:"2. Bundesliga", id:79, file:"de.2" },
-  { country:"Germany", flag:"🇩🇪", name:"3. Liga", id:80, file:"de.3" },
-  { country:"Italy", flag:"🇮🇹", name:"Serie A", id:135, file:"it.1" },
-  { country:"Italy", flag:"🇮🇹", name:"Serie B", id:136, file:"it.2" },
-  { country:"Spain", flag:"🇪🇸", name:"La Liga", id:140, file:"es.1" },
-  { country:"Spain", flag:"🇪🇸", name:"Segunda División", id:141, file:"es.2" },
-  { country:"USA", flag:"🇺🇸", name:"MLS", id:253, file:"us.1" },
-  { country:"Netherlands", flag:"🇳🇱", name:"Eredivisie", id:88, file:"nl.1" },
-  { country:"Portugal", flag:"🇵🇹", name:"Primeira Liga", id:94, file:"pt.1" },
-  { country:"Scotland", flag:"🏴", name:"Premiership", id:179, file:"sco.1" }
-];
-
-const ttl = {
-  open: 6 * 60 * 60 * 1000,
-  leagues: 6 * 60 * 60 * 1000,
-  matches: 2 * 60 * 1000,
-  detail: 90 * 1000,
-  standings: 30 * 60 * 1000
+const BASE = {
+  apiFootball: "https://v3.football.api-sports.io",
+  highlightly: "https://soccer.highlightly.net",
+  footballData: "https://api.football-data.org/v4",
+  sportsDB: "https://www.thesportsdb.com/api/v1/json",
+  openLiga: "https://api.openligadb.de",
+  openFootball: "https://raw.githubusercontent.com/openfootball/football.json/master",
+  statsBomb: "https://raw.githubusercontent.com/statsbomb/open-data/master"
 };
 
-function cached(key) {
-  const v = cache.get(key);
-  if (!v || Date.now() > v.until) {
+const cache = new Map();
+
+const TTL = {
+  live: 25 * 1000,
+  matches: 2 * 60 * 1000,
+  details: 60 * 1000,
+  standings: 20 * 60 * 1000,
+  logos: 24 * 60 * 60 * 1000,
+  archive: 24 * 60 * 60 * 1000
+};
+
+const LEAGUES = [
+  { name:"Premier League", country:"England", flag:"🏴", api:39, fd:"PL", open:"en.1" },
+  { name:"Championship", country:"England", flag:"🏴", api:40, fd:"ELC", open:"en.2" },
+  { name:"League One", country:"England", flag:"🏴", api:41, fd:"", open:"en.3" },
+  { name:"League Two", country:"England", flag:"🏴", api:42, fd:"", open:"en.4" },
+
+  { name:"La Liga", country:"Spain", flag:"🇪🇸", api:140, fd:"PD", open:"es.1" },
+  { name:"Segunda División", country:"Spain", flag:"🇪🇸", api:141, fd:"SD", open:"es.2" },
+
+  { name:"Serie A", country:"Italy", flag:"🇮🇹", api:135, fd:"SA", open:"it.1" },
+  { name:"Serie B", country:"Italy", flag:"🇮🇹", api:136, fd:"SB", open:"it.2" },
+
+  { name:"Bundesliga", country:"Germany", flag:"🇩🇪", api:78, fd:"BL1", open:"de.1", openLiga:"bl1" },
+  { name:"2. Bundesliga", country:"Germany", flag:"🇩🇪", api:79, fd:"BL2", open:"de.2", openLiga:"bl2" },
+  { name:"3. Liga", country:"Germany", flag:"🇩🇪", api:80, fd:"", open:"de.3", openLiga:"bl3" },
+
+  { name:"Ligue 1", country:"France", flag:"🇫🇷", api:61, fd:"FL1", open:"fr.1" },
+  { name:"Ligue 2", country:"France", flag:"🇫🇷", api:62, fd:"FL2", open:"fr.2" },
+
+  { name:"Eredivisie", country:"Netherlands", flag:"🇳🇱", api:88, fd:"DED", open:"nl.1" },
+  { name:"Primeira Liga", country:"Portugal", flag:"🇵🇹", api:94, fd:"PPL", open:"pt.1" },
+  { name:"Brasileirão Série A", country:"Brazil", flag:"🇧🇷", api:71, fd:"BSA", open:"br.1" },
+  { name:"MLS", country:"USA", flag:"🇺🇸", api:253, fd:"MLS", open:"us.1" },
+
+  { name:"UEFA Champions League", country:"Europe", flag:"🇪🇺", api:2, fd:"CL", open:null },
+  { name:"UEFA Europa League", country:"Europe", flag:"🇪🇺", api:3, fd:"EL", open:null },
+  { name:"UEFA Conference League", country:"Europe", flag:"🇪🇺", api:848, fd:"", open:null }
+];
+
+function getCache(key) {
+  const item = cache.get(key);
+  if (!item || item.expires < Date.now()) {
     cache.delete(key);
     return null;
   }
-  return v.data;
+  return item.value;
 }
 
-function save(key, data, ms) {
-  cache.set(key, { data, until: Date.now() + ms });
-  return data;
+function setCache(key, value, ttl) {
+  cache.set(key, { value, expires: Date.now() + ttl });
+  return value;
 }
 
-async function getJSON(url, headers = {}) {
-  const r = await fetch(url, {
-    headers,
-    signal: AbortSignal.timeout(15000)
-  });
-  const data = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(data.message || `HTTP ${r.status}`);
-  return data;
-}
+async function requestJSON(url, headers = {}, timeout = 10000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeout);
 
-async function apiFootball(path, params = {}, life = ttl.detail) {
-  const key = "api:" + path + ":" + JSON.stringify(params);
-  const old = cached(key);
-  if (old) return old;
+  try {
+    const response = await fetch(url, {
+      headers,
+      signal: controller.signal
+    });
 
-  if (!process.env.API_FOOTBALL_KEY) {
-    throw new Error("API_FOOTBALL_KEY belum diatur di Vercel.");
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status} from ${new URL(url).hostname}`);
+    }
+
+    return await response.json();
+  } finally {
+    clearTimeout(timer);
   }
+}
 
-  const url = new URL(API + path);
-  for (const [k, v] of Object.entries(params)) {
-    if (v !== undefined && v !== null && v !== "") {
-      url.searchParams.set(k, v);
+function queryString(params) {
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(params || {})) {
+    if (value !== undefined && value !== null && value !== "") {
+      search.set(key, String(value));
     }
   }
+  return search.toString();
+}
 
-  const json = await getJSON(url.toString(), {
+async function apiFootball(path, params = {}, ttl = TTL.details) {
+  if (!process.env.API_FOOTBALL_KEY) {
+    throw new Error("API_FOOTBALL_KEY belum dipasang");
+  }
+
+  const qs = queryString(params);
+  const url = `${BASE.apiFootball}${path}${qs ? "?" + qs : ""}`;
+  const key = `af:${url}`;
+  const saved = getCache(key);
+  if (saved) return saved;
+
+  const data = await requestJSON(url, {
     "x-apisports-key": process.env.API_FOOTBALL_KEY
   });
 
-  if (json.errors && Object.keys(json.errors).length) {
-    throw new Error(JSON.stringify(json.errors));
+  if (data.errors && Object.keys(data.errors).length) {
+    throw new Error(JSON.stringify(data.errors));
   }
 
-  return save(key, json.response || [], life);
+  return setCache(key, data.response || [], ttl);
+}
+
+async function highlightly(path, params = {}, ttl = TTL.details) {
+  if (!process.env.HIGHLIGHTLY_API_KEY) {
+    throw new Error("HIGHLIGHTLY_API_KEY belum dipasang");
+  }
+
+  const qs = queryString(params);
+  const url = `${BASE.highlightly}${path}${qs ? "?" + qs : ""}`;
+  const key = `hl:${url}`;
+  const saved = getCache(key);
+  if (saved) return saved;
+
+  const data = await requestJSON(url, {
+    "x-rapidapi-key": process.env.HIGHLIGHTLY_API_KEY
+  });
+
+  const result = Array.isArray(data) ? data : (data.data || data.results || []);
+  return setCache(key, result, ttl);
+}
+
+async function footballData(path, params = {}, ttl = TTL.matches) {
+  if (!process.env.FOOTBALL_DATA_KEY) {
+    throw new Error("FOOTBALL_DATA_KEY belum dipasang");
+  }
+
+  const qs = queryString(params);
+  const url = `${BASE.footballData}${path}${qs ? "?" + qs : ""}`;
+  const key = `fd:${url}`;
+  const saved = getCache(key);
+  if (saved) return saved;
+
+  const data = await requestJSON(url, {
+    "X-Auth-Token": process.env.FOOTBALL_DATA_KEY
+  });
+
+  return setCache(key, data, ttl);
+}
+
+function sportsDBKey() {
+  return process.env.THESPORTSDB_API_KEY || "123";
+}
+
+async function sportsDB(path, params = {}, ttl = TTL.details) {
+  const qs = queryString(params);
+  const url = `${BASE.sportsDB}/${sportsDBKey()}/${path}${qs ? "?" + qs : ""}`;
+  const key = `tsdb:${url}`;
+  const saved = getCache(key);
+  if (saved) return saved;
+
+  const data = await requestJSON(url);
+  return setCache(key, data, ttl);
+}
+
+async function openLiga(path, ttl = TTL.matches) {
+  const url = `${BASE.openLiga}${path}`;
+  const key = `ol:${url}`;
+  const saved = getCache(key);
+  if (saved) return saved;
+
+  const data = await requestJSON(url);
+  return setCache(key, data, ttl);
+}
+
+async function openFootballFile(season, file) {
+  const url = `${BASE.openFootball}/${season}/${file}.json`;
+  const key = `of:${url}`;
+  const saved = getCache(key);
+  if (saved) return saved;
+
+  const data = await requestJSON(url);
+  return setCache(key, data, TTL.archive);
+}
+
+async function statsBombFile(path) {
+  const url = `${BASE.statsBomb}/${path}`;
+  const key = `sb:${url}`;
+  const saved = getCache(key);
+  if (saved) return saved;
+
+  const data = await requestJSON(url);
+  return setCache(key, data, TTL.archive);
+}
+
+function seasonStart(date = new Date()) {
+  const year = date.getUTCFullYear();
+  return date.getUTCMonth() >= 6 ? year : year - 1;
 }
 
 function currentSeason() {
-  const now = new Date();
-  return now.getUTCMonth() >= 6
-    ? now.getUTCFullYear()
-    : now.getUTCFullYear() - 1;
+  return seasonStart();
 }
 
 function dateToday() {
@@ -104,206 +229,687 @@ function dateToday() {
   }).format(new Date());
 }
 
-function mapOpenMatch(m, league) {
-  const score = m.score?.ft || m.score?.pen || null;
-  const date = m.date ? new Date(m.date + "T12:00:00Z") : null;
+function toArray(value) {
+  if (Array.isArray(value)) return value;
+  if (value && Array.isArray(value.data)) return value.data;
+  if (value && Array.isArray(value.response)) return value.response;
+  return [];
+}
+
+function mapAFMatch(item) {
+  const fixture = item.fixture || {};
+  const teams = item.teams || {};
+  const goals = item.goals || {};
+  const league = item.league || {};
+
+  const status = fixture.status || {};
+  const short = status.short || "";
+
   return {
-    id: `open:${league.file}:${m.date}:${m.team1}:${m.team2}`,
-    date: m.date,
-    timestamp: date ? Math.floor(date.getTime() / 1000) : null,
-    home: m.team1,
-    away: m.team2,
-    homeScore: score ? Number(score[0]) : null,
-    awayScore: score ? Number(score[1]) : null,
-    finished: !!score,
-    round: m.round || "",
-    league: league.name,
-    country: league.country,
-    flag: league.flag,
-    source: "OpenFootball"
+    id: String(fixture.id),
+    provider: "API-Football",
+    providerId: String(fixture.id),
+    date: fixture.date,
+    timestamp: fixture.timestamp,
+    status: status.long || short,
+    statusShort: short,
+    elapsed: status.elapsed,
+    live: ["1H","HT","2H","ET","P","LIVE","BT"].includes(short),
+    finished: ["FT","AET","PEN"].includes(short),
+    home: teams.home?.name || "Home",
+    away: teams.away?.name || "Away",
+    homeId: teams.home?.id,
+    awayId: teams.away?.id,
+    homeLogo: teams.home?.logo || null,
+    awayLogo: teams.away?.logo || null,
+    homeScore: goals.home,
+    awayScore: goals.away,
+    league: league.name || "",
+    leagueId: league.id,
+    country: league.country || "",
+    season: league.season,
+    round: league.round || ""
   };
 }
 
-async function openLeagueMatches(league, season) {
-  if (!league.file) return [];
-  const key = `open:${season}:${league.file}`;
-  const old = cached(key);
-  if (old) return old;
+function mapHighlightlyMatch(item) {
+  const home = item.homeTeam || item.home || {};
+  const away = item.awayTeam || item.away || {};
+  const league = item.league || {};
 
-  const json = await getJSON(`${OPEN}/${season}/${league.file}.json`);
-  const rows = Array.isArray(json.matches) ? json.matches : [];
-  return save(key, rows.map(m => mapOpenMatch(m, league)), ttl.open);
+  const homeName = typeof home === "string" ? home : home.name;
+  const awayName = typeof away === "string" ? away : away.name;
+
+  const status = item.status || {};
+  const statusText = typeof status === "string" ? status : (status.name || status.description || "");
+
+  return {
+    id: `hl:${item.id || item.matchId}`,
+    provider: "Highlightly",
+    providerId: String(item.id || item.matchId || ""),
+    date: item.date || item.startDate || item.dateUtc,
+    status: statusText,
+    statusShort: status.shortName || "",
+    live: Boolean(item.isLive || status.isLive),
+    finished: Boolean(item.isFinished || status.isFinished),
+    home: homeName || "Home",
+    away: awayName || "Away",
+    homeId: home.id,
+    awayId: away.id,
+    homeLogo: home.logo || home.image || null,
+    awayLogo: away.logo || away.image || null,
+    homeScore: item.homeScore?.current ?? item.score?.home ?? null,
+    awayScore: item.awayScore?.current ?? item.score?.away ?? null,
+    league: league.name || item.leagueName || "",
+    leagueId: league.id,
+    country: league.country || "",
+    season: item.season
+  };
 }
 
-async function openPosters(date) {
-  const season = currentSeason() + "-" + String(currentSeason() + 1).slice(-2);
-  const results = await Promise.allSettled(
-    LEAGUES.filter(l => l.file).map(l => openLeagueMatches(l, season))
+function mapFootballDataMatch(item) {
+  const score = item.score?.fullTime || {};
+  return {
+    id: `fd:${item.id}`,
+    provider: "football-data.org",
+    providerId: String(item.id),
+    date: item.utcDate,
+    status: item.status,
+    live: ["IN_PLAY","PAUSED"].includes(item.status),
+    finished: ["FINISHED","AWARDED"].includes(item.status),
+    home: item.homeTeam?.name || "Home",
+    away: item.awayTeam?.name || "Away",
+    homeId: item.homeTeam?.id,
+    awayId: item.awayTeam?.id,
+    homeLogo: item.homeTeam?.crest || null,
+    awayLogo: item.awayTeam?.crest || null,
+    homeScore: score.home ?? null,
+    awayScore: score.away ?? null,
+    league: item.competition?.name || "",
+    leagueId: item.competition?.id,
+    country: item.area?.name || "",
+    season: item.season?.startDate?.slice(0, 4)
+  };
+}
+
+function mapOpenLigaMatch(item) {
+  const results = item.matchResults || [];
+  const final = results.find(x => x.resultTypeID === 2) || results[results.length - 1];
+
+  return {
+    id: `ol:${item.matchID}`,
+    provider: "OpenLigaDB",
+    providerId: String(item.matchID),
+    date: item.matchDateTimeUTC || item.matchDateTime,
+    status: item.matchIsFinished ? "Finished" : "Scheduled",
+    live: false,
+    finished: Boolean(item.matchIsFinished),
+    home: item.team1?.teamName || "Home",
+    away: item.team2?.teamName || "Away",
+    homeId: item.team1?.teamId,
+    awayId: item.team2?.teamId,
+    homeLogo: item.team1?.teamIconUrl || null,
+    awayLogo: item.team2?.teamIconUrl || null,
+    homeScore: final?.pointsTeam1 ?? null,
+    awayScore: final?.pointsTeam2 ?? null,
+    league: item.leagueName || "Bundesliga",
+    leagueId: item.leagueId,
+    country: "Germany",
+    season: item.leagueSeason
+  };
+}
+
+function mapOpenFootballMatch(item, league) {
+  const score = item.score?.ft || item.score?.regular || null;
+  return {
+    id: `of:${league.open}:${item.date}:${item.team1}:${item.team2}`,
+    provider: "OpenFootball",
+    providerId: null,
+    date: item.date,
+    status: score ? "Finished" : "Scheduled",
+    live: false,
+    finished: Boolean(score),
+    home: item.team1,
+    away: item.team2,
+    homeId: null,
+    awayId: null,
+    homeLogo: null,
+    awayLogo: null,
+    homeScore: score?.[0] ?? null,
+    awayScore: score?.[1] ?? null,
+    league: league.name,
+    leagueId: league.api,
+    country: league.country,
+    season: currentSeason()
+  };
+}
+
+function sortMatches(matches) {
+  return matches.sort((a, b) => new Date(a.date) - new Date(b.date));
+}
+
+function dedupeMatches(matches) {
+  const seen = new Set();
+  return matches.filter(match => {
+    const key = [
+      String(match.date || "").slice(0, 10),
+      (match.home || "").toLowerCase(),
+      (match.away || "").toLowerCase()
+    ].join("|");
+
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+async function getAFToday(date) {
+  const rows = await apiFootball("/fixtures", {
+    date,
+    timezone: "Asia/Jakarta"
+  }, TTL.live);
+
+  return rows.map(mapAFMatch);
+}
+
+async function getHighlightlyMatches(date) {
+  const rows = await highlightly("/matches", { date }, TTL.live);
+  return rows.map(mapHighlightlyMatch);
+}
+
+async function getFootballDataMatches(date) {
+  const rows = await footballData("/matches", {
+    dateFrom: date,
+    dateTo: date
+  });
+
+  return (rows.matches || []).map(mapFootballDataMatch);
+}
+
+async function getSportsDBMatches(date) {
+  const rows = await sportsDB("eventsday.php", {
+    d: date,
+    s: "Soccer"
+  }, TTL.matches);
+
+  return (rows.events || []).map(event => ({
+    id: `tsdb:${event.idEvent}`,
+    provider: "TheSportsDB",
+    providerId: String(event.idEvent),
+    date: event.strTimestamp || `${event.dateEvent || date}T${event.strTime || "00:00:00"}`,
+    status: event.strStatus || "Scheduled",
+    live: /live/i.test(event.strStatus || ""),
+    finished: /match finished|finished/i.test(event.strStatus || ""),
+    home: event.strHomeTeam || "Home",
+    away: event.strAwayTeam || "Away",
+    homeId: null,
+    awayId: null,
+    homeLogo: event.strHomeTeamBadge || null,
+    awayLogo: event.strAwayTeamBadge || null,
+    homeScore: event.intHomeScore == null ? null : Number(event.intHomeScore),
+    awayScore: event.intAwayScore == null ? null : Number(event.intAwayScore),
+    league: event.strLeague || "",
+    leagueId: event.idLeague,
+    country: event.strCountry || "",
+    season: event.strSeason
+  }));
+}
+
+async function getOpenLigaMatches(date, league) {
+  const year = Number(date.slice(0, 4));
+  const season = new Date(date).getMonth() < 6 ? year - 1 : year;
+  const rows = await openLiga(`/getmatchdata/${league.openLiga}/${season}`);
+  return rows.map(mapOpenLigaMatch).filter(m => m.date?.slice(0, 10) === date);
+}
+
+async function getOpenFootballMatches(date) {
+  const start = currentSeason();
+  const season = `${start}-${String(start + 1).slice(-2)}`;
+
+  const candidates = LEAGUES.filter(x => x.open);
+  const responses = await Promise.allSettled(
+    candidates.map(async league => {
+      const data = await openFootballFile(season, league.open);
+      return (data.matches || [])
+        .filter(match => match.date === date)
+        .map(match => mapOpenFootballMatch(match, league));
+    })
   );
 
-  return results
-    .filter(x => x.status === "fulfilled")
-    .flatMap(x => x.value)
-    .filter(m => m.date >= date)
-    .sort((a, b) => (a.date || "").localeCompare(b.date || ""))
-    .slice(0, 24);
+  return responses.flatMap(result =>
+    result.status === "fulfilled" ? result.value : []
+  );
+}
+
+async function getMatches(date, leagueId) {
+  const cacheKey = `matches:${date}:${leagueId || "all"}`;
+  const saved = getCache(cacheKey);
+  if (saved) return saved;
+
+  const errors = [];
+  let rows = [];
+
+  // Main provider
+  try {
+    rows = await getAFToday(date);
+  } catch (error) {
+    errors.push(`API-Football: ${error.message}`);
+  }
+
+  // Full fallback only if main source fails or returns no data.
+  if (!rows.length) {
+    try {
+      rows = await getHighlightlyMatches(date);
+    } catch (error) {
+      errors.push(`Highlightly: ${error.message}`);
+    }
+  }
+
+  if (!rows.length) {
+    try {
+      rows = await getFootballDataMatches(date);
+    } catch (error) {
+      errors.push(`football-data.org: ${error.message}`);
+    }
+  }
+
+  if (!rows.length) {
+    try {
+      rows = await getSportsDBMatches(date);
+    } catch (error) {
+      errors.push(`TheSportsDB: ${error.message}`);
+    }
+  }
+
+  // OpenLigaDB is a Germany-specific fallback.
+  if (!rows.length) {
+    const german = LEAGUES.filter(x => x.openLiga);
+    const results = await Promise.allSettled(
+      german.map(x => getOpenLigaMatches(date, x))
+    );
+    rows = results.flatMap(x => x.status === "fulfilled" ? x.value : []);
+  }
+
+  // OpenFootball is the public JSON schedule fallback.
+  if (!rows.length) {
+    try {
+      rows = await getOpenFootballMatches(date);
+    } catch (error) {
+      errors.push(`OpenFootball: ${error.message}`);
+    }
+  }
+
+  if (leagueId) {
+    rows = rows.filter(x => String(x.leagueId) === String(leagueId));
+  }
+
+  rows = sortMatches(dedupeMatches(rows));
+  return setCache(cacheKey, {
+    matches: rows,
+    errors,
+    provider: rows[0]?.provider || null
+  }, TTL.matches);
 }
 
 async function getLeagues() {
+  const key = "leagues:catalog";
+  const saved = getCache(key);
+  if (saved) return saved;
+
+  let apiRows = [];
+
   try {
-    const rows = await apiFootball("/leagues", { current: "true" }, ttl.leagues);
-    return rows.map(x => ({
-      id: x.league.id,
-      name: x.league.name,
-      logo: x.league.logo,
-      country: x.country?.name || "International",
-      flag: x.country?.flag || "",
-      seasons: x.seasons || [],
-      source: "API-Football"
-    }));
-  } catch (e) {
-    return LEAGUES.map(l => ({
-      id: l.id, name: l.name, country: l.country,
-      flag: l.flag, logo: null, seasons: [], source: "OpenFootball"
-    }));
+    apiRows = await apiFootball("/leagues", { current: "true" }, TTL.standings);
+  } catch (_) {}
+
+  const catalog = LEAGUES.map(league => {
+    const found = apiRows.find(x =>
+      Number(x.league?.id) === Number(league.api)
+    );
+
+    return {
+      id: league.api,
+      name: league.name,
+      country: league.country,
+      flag: league.flag,
+      code: league.fd,
+      season: found?.seasons?.find(s => s.current)?.year || currentSeason(),
+      logo: found?.league?.logo || null,
+      provider: found ? "API-Football" : "Static catalog"
+    };
+  });
+
+  return setCache(key, catalog, TTL.standings);
+}
+
+async function getStandings(leagueId, season) {
+  const key = `standings:${leagueId}:${season}`;
+  const saved = getCache(key);
+  if (saved) return saved;
+
+  const errors = [];
+
+  try {
+    const data = await apiFootball("/standings", {
+      league: leagueId,
+      season
+    }, TTL.standings);
+
+    const table = data?.[0]?.league?.standings || [];
+    if (table.length) {
+      return setCache(key, {
+        standings: table,
+        provider: "API-Football",
+        errors
+      }, TTL.standings);
+    }
+  } catch (error) {
+    errors.push(error.message);
   }
-}
 
-function mapFixture(x) {
-  const f = x.fixture || {};
-  const h = x.teams?.home || {};
-  const a = x.teams?.away || {};
-  const st = f.status || {};
-  const short = st.short || "NS";
-  const live = ["1H","2H","HT","ET","BT","P","LIVE"].includes(short);
-  const done = ["FT","AET","PEN"].includes(short);
+  const league = LEAGUES.find(x => Number(x.api) === Number(leagueId));
 
-  return {
-    id: f.id,
-    date: f.date,
-    timestamp: f.timestamp,
-    status: short,
-    statusText: st.long || "",
-    elapsed: st.elapsed,
-    live,
-    finished: done,
-    league: x.league?.name || "",
-    leagueId: x.league?.id,
-    country: x.league?.country || "",
-    home: h.name || "Home",
-    away: a.name || "Away",
-    homeLogo: h.logo || "",
-    awayLogo: a.logo || "",
-    homeId: h.id,
-    awayId: a.id,
-    homeScore: x.goals?.home ?? null,
-    awayScore: x.goals?.away ?? null,
-    source: "API-Football"
-  };
-}
+  if (league?.fd) {
+    try {
+      const data = await footballData(
+        `/competitions/${league.fd}/standings`,
+        { season },
+        TTL.standings
+      );
 
-async function getMatches(date, league, season) {
-  const params = { date: date || dateToday(), timezone: "Asia/Jakarta" };
-  if (league) params.league = league;
-  if (season) params.season = season;
+      if (data.standings?.length) {
+        return setCache(key, {
+          standings: data.standings.map(group =>
+            group.table.map(item => ({
+              rank: item.position,
+              team: {
+                name: item.team?.name,
+                logo: item.team?.crest
+              },
+              all: {
+                played: item.playedGames,
+                win: item.won,
+                draw: item.draw,
+                lose: item.lost
+              },
+              goalsDiff: item.goalDifference,
+              points: item.points
+            }))
+          ),
+          provider: "football-data.org",
+          errors
+        }, TTL.standings);
+      }
+    } catch (error) {
+      errors.push(error.message);
+    }
+  }
 
-  const rows = await apiFootball("/fixtures", params, ttl.matches);
-  return rows.map(mapFixture);
-}
-
-async function getStandings(league, season) {
-  return apiFootball("/standings", { league, season }, ttl.standings);
+  return { standings: [], provider: null, errors };
 }
 
 async function getMatch(id) {
-  const [fixture, lineups, stats, players, events] = await Promise.all([
-    apiFootball("/fixtures", { id }),
-    apiFootball("/fixtures/lineups", { fixture: id }),
-    apiFootball("/fixtures/statistics", { fixture: id }),
-    apiFootball("/fixtures/players", { fixture: id }),
-    apiFootball("/fixtures/events", { fixture: id })
-  ]);
+  const idText = String(id);
+  const key = `match:${idText}`;
+  const saved = getCache(key);
+  if (saved) return saved;
 
-  return {
-    match: fixture[0] ? mapFixture(fixture[0]) : null,
-    lineups,
-    statistics: stats,
-    players,
-    events
-  };
+  const [provider, providerId] = idText.includes(":")
+    ? [idText.split(":")[0], idText.slice(idText.indexOf(":") + 1)]
+    : ["af", idText];
+
+  if (provider === "af" || /^\d+$/.test(idText)) {
+    const fixture = await apiFootball("/fixtures", { id: providerId });
+    if (!fixture.length) throw new Error("Pertandingan tidak ditemukan");
+
+    const [lineups, stats, players, events] = await Promise.allSettled([
+      apiFootball("/fixtures/lineups", { fixture: providerId }),
+      apiFootball("/fixtures/statistics", { fixture: providerId }),
+      apiFootball("/fixtures/players", { fixture: providerId }),
+      apiFootball("/fixtures/events", { fixture: providerId })
+    ]);
+
+    const data = {
+      fixture: mapAFMatch(fixture[0]),
+      statistics: stats.status === "fulfilled" ? stats.value : [],
+      lineups: lineups.status === "fulfilled" ? lineups.value : [],
+      players: players.status === "fulfilled" ? players.value : [],
+      events: events.status === "fulfilled" ? events.value : [],
+      provider: "API-Football",
+      unavailable: []
+    };
+
+    for (const [name, result] of [
+      ["statistics", stats],
+      ["lineups", lineups],
+      ["players", players],
+      ["events", events]
+    ]) {
+      if (result.status === "rejected") data.unavailable.push(name);
+    }
+
+    return setCache(key, data, TTL.details);
+  }
+
+  if (provider === "hl") {
+    const [statistics, lineups, events] = await Promise.allSettled([
+      highlightly(`/statistics/${providerId}`),
+      highlightly(`/lineups/${providerId}`),
+      highlightly(`/live-events/${providerId}`)
+    ]);
+
+    return setCache(key, {
+      fixture: null,
+      statistics: statistics.status === "fulfilled" ? statistics.value : [],
+      lineups: lineups.status === "fulfilled" ? lineups.value : [],
+      players: [],
+      events: events.status === "fulfilled" ? events.value : [],
+      provider: "Highlightly",
+      unavailable: []
+    }, TTL.details);
+  }
+
+  if (provider === "tsdb") {
+    const [event, lineup, timeline] = await Promise.allSettled([
+      sportsDB("lookupevent.php", { id: providerId }),
+      sportsDB("lookuplineup.php", { id: providerId }),
+      sportsDB("lookuptimeline.php", { id: providerId })
+    ]);
+
+    return setCache(key, {
+      fixture: null,
+      statistics: [],
+      lineups: lineup.status === "fulfilled" ? lineup.value.lineup || [] : [],
+      players: [],
+      events: timeline.status === "fulfilled" ? timeline.value.timeline || [] : [],
+      event: event.status === "fulfilled" ? event.value.events?.[0] : null,
+      provider: "TheSportsDB",
+      unavailable: []
+    }, TTL.details);
+  }
+
+  throw new Error(
+    "Detail pertandingan untuk provider ini belum mendukung statistik live."
+  );
 }
 
 async function getH2H(team1, team2) {
-  return (await apiFootball("/fixtures/headtohead", {
+  const rows = await apiFootball("/fixtures/headtohead", {
     h2h: `${team1}-${team2}`,
-    last: 10
-  })).map(mapFixture);
+    last: 10,
+    timezone: "Asia/Jakarta"
+  });
+
+  return rows.map(mapAFMatch);
 }
 
 async function getTeamForm(team, season) {
-  return (await apiFootball("/fixtures", {
-    team, last: 5, season
-  })).map(mapFixture);
+  const rows = await apiFootball("/fixtures", {
+    team,
+    last: 5,
+    season,
+    timezone: "Asia/Jakarta"
+  });
+
+  return rows.map(mapAFMatch);
 }
 
-async function route(q) {
-  switch (q.type) {
-    case "home": {
-      const [leagues, posters, matches] = await Promise.all([
-        getLeagues(),
-        openPosters(q.date || dateToday()),
-        getMatches(q.date || dateToday()).catch(() => [])
-      ]);
-      return { leagues, posters, matches };
-    }
+async function getPredictions(fixture) {
+  const rows = await apiFootball("/predictions", { fixture });
+  return rows[0] || null;
+}
 
-    case "leagues":
-      return getLeagues();
+async function getTeamLogo(name) {
+  const key = `logo:${name.toLowerCase()}`;
+  const saved = getCache(key);
+  if (saved) return saved;
 
-    case "posters":
-      return openPosters(q.date || dateToday());
+  try {
+    const data = await sportsDB("searchteams.php", { t: name }, TTL.logos);
+    const team = data.teams?.[0];
 
-    case "matches":
-      return getMatches(q.date, q.league, q.season);
-
-    case "standings":
-      return getStandings(q.league, q.season);
-
-    case "match":
-      return getMatch(q.id);
-
-    case "h2h":
-      return getH2H(q.team1, q.team2);
-
-    case "team-form":
-      return getTeamForm(q.team, q.season);
-
-    case "predictions":
-      return apiFootball("/predictions", { fixture: q.fixture });
-
-    default:
-      throw new Error("Endpoint tidak dikenal.");
+    return setCache(key, {
+      name: team?.strTeam || name,
+      badge: team?.strBadge || team?.strTeamBadge || null,
+      logo: team?.strTeamLogo || null,
+      provider: "TheSportsDB"
+    }, TTL.logos);
+  } catch (_) {
+    return { name, badge: null, logo: null, provider: null };
   }
 }
 
-module.exports = async (req, res) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Cache-Control", "no-store");
+async function getStatsBombArchive() {
+  const competitions = await statsBombFile("data/competitions.json");
+  return competitions.map(item => ({
+    competitionId: item.competition_id,
+    seasonId: item.season_id,
+    competition: item.competition_name,
+    country: item.country_name,
+    season: item.season_name,
+    provider: "StatsBomb Open Data"
+  }));
+}
 
-  if (req.method === "OPTIONS") return res.status(204).end();
+async function getStatsBombMatches(competitionId, seasonId) {
+  return statsBombFile(
+    `data/matches/${competitionId}/${seasonId}.json`
+  );
+}
+
+async function getHome(date) {
+  const [matchesResult, leaguesResult, postersResult] = await Promise.allSettled([
+    getMatches(date),
+    getLeagues(),
+    getOpenFootballMatches(date)
+  ]);
+
+  const matchData = matchesResult.status === "fulfilled"
+    ? matchesResult.value
+    : { matches: [], errors: [matchesResult.reason?.message] };
+
+  return {
+    date,
+    matches: matchData.matches,
+    errors: matchData.errors || [],
+    leagues: leaguesResult.status === "fulfilled" ? leaguesResult.value : [],
+    posters: postersResult.status === "fulfilled" ? postersResult.value : [],
+    providers: [
+      "API-Football",
+      "Highlightly",
+      "football-data.org",
+      "TheSportsDB",
+      "OpenLigaDB",
+      "OpenFootball",
+      "StatsBomb Open Data"
+    ]
+  };
+}
+
+module.exports = async function handler(req, res) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+
   if (req.method !== "GET") {
-    return res.status(405).json({ error: "Method not allowed" });
+    return res.status(405).json({
+      ok: false,
+      error: "Method not allowed"
+    });
   }
 
   try {
-    const data = await route(req.query || {});
+    const q = req.query || {};
+    const type = q.type || "home";
+    const date = q.date || dateToday();
+
+    let data;
+
+    switch (type) {
+      case "home":
+        data = await getHome(date);
+        break;
+
+      case "leagues":
+        data = await getLeagues();
+        break;
+
+      case "matches":
+        data = await getMatches(date, q.league);
+        break;
+
+      case "standings":
+        data = await getStandings(q.league, q.season || currentSeason());
+        break;
+
+      case "match":
+        data = await getMatch(q.id);
+        break;
+
+      case "h2h":
+        data = await getH2H(q.team1, q.team2);
+        break;
+
+      case "team-form":
+        data = await getTeamForm(q.team, q.season || currentSeason());
+        break;
+
+      case "predictions":
+        data = await getPredictions(q.fixture);
+        break;
+
+      case "team-logo":
+        data = await getTeamLogo(q.name);
+        break;
+
+      case "statsbomb-competitions":
+        data = await getStatsBombArchive();
+        break;
+
+      case "statsbomb-matches":
+        data = await getStatsBombMatches(q.competition, q.season);
+        break;
+
+      default:
+        return res.status(400).json({
+          ok: false,
+          error: "Unknown API type"
+        });
+    }
+
     return res.status(200).json({
       ok: true,
-      provider: "OpenFootball + API-Football",
+      type,
       data
     });
-  } catch (e) {
-    console.error(e);
-    return res.status(500).json({ ok: false, error: e.message });
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      error: error.message || "Internal server error"
+    });
   }
 };
