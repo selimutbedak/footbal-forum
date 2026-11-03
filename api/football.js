@@ -1,5 +1,4 @@
 const BASE_URL = "https://api.football-data.org/v4";
-
 const CACHE_TIME = 60 * 1000;
 const cache = new Map();
 
@@ -22,13 +21,40 @@ function send(res, status, body) {
   return res.status(status).json(body);
 }
 
+function jakartaDate(date = new Date()) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Jakarta",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).format(date);
+}
+
+function addDays(dateString, days) {
+  const date = new Date(`${dateString}T12:00:00+07:00`);
+  date.setDate(date.getDate() + days);
+  return jakartaDate(date);
+}
+
+function validDate(value) {
+  if (!value) return jakartaDate();
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    throw new Error("Format tanggal harus YYYY-MM-DD.");
+  }
+
+  return value;
+}
+
 async function footballFetch(path) {
   const token = process.env.FOOTBALL_DATA_TOKEN;
 
   if (!token) {
-    throw new Error(
+    const error = new Error(
       "FOOTBALL_DATA_TOKEN belum dipasang di Vercel."
     );
+    error.status = 500;
+    throw error;
   }
 
   const url = BASE_URL + path;
@@ -66,18 +92,6 @@ async function footballFetch(path) {
   return data;
 }
 
-function getDate(value) {
-  if (!value) {
-    return new Date().toISOString().slice(0, 10);
-  }
-
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    throw new Error("Format tanggal harus YYYY-MM-DD.");
-  }
-
-  return value;
-}
-
 function normalizeMatch(match) {
   const home = match.homeTeam || {};
   const away = match.awayTeam || {};
@@ -88,9 +102,9 @@ function normalizeMatch(match) {
 
   return {
     id: match.id,
-    date: match.utcDate,
-    status: match.status,
-    statusShort: match.status,
+    date: match.utcDate || null,
+    status: match.status || "SCHEDULED",
+    statusShort: match.status || "SCHEDULED",
     minute: match.minute || null,
 
     live: [
@@ -113,11 +127,11 @@ function normalizeMatch(match) {
     homeLogo: home.crest || "",
     awayLogo: away.crest || "",
 
-    homeScore: fullTime.home,
-    awayScore: fullTime.away,
+    homeScore: fullTime.home ?? null,
+    awayScore: fullTime.away ?? null,
 
-    halfHomeScore: halfTime.home,
-    halfAwayScore: halfTime.away,
+    halfHomeScore: halfTime.home ?? null,
+    halfAwayScore: halfTime.away ?? null,
 
     league: competition.name || "",
     leagueId: competition.code || "",
@@ -137,13 +151,13 @@ function normalizeMatch(match) {
 
 function getLeague(code) {
   return LEAGUES.find(
-    league => league.id === String(code).toUpperCase()
+    league => league.id === String(code || "").toUpperCase()
   );
 }
 
 async function getMatches(dateFrom, dateTo, competition) {
-  const from = getDate(dateFrom);
-  const to = getDate(dateTo || dateFrom);
+  const from = validDate(dateFrom);
+  const to = validDate(dateTo || dateFrom);
 
   const query =
     `?dateFrom=${encodeURIComponent(from)}` +
@@ -168,6 +182,23 @@ async function getMatches(dateFrom, dateTo, competition) {
   return (result.matches || []).map(normalizeMatch);
 }
 
+async function getCompetitions() {
+  const result = await footballFetch("/competitions");
+  const available = new Map(
+    (result.competitions || []).map(item => [item.code, item])
+  );
+
+  return LEAGUES.map(league => {
+    const competition = available.get(league.id);
+
+    return {
+      ...league,
+      emblem: competition?.emblem || "",
+      available: Boolean(competition)
+    };
+  });
+}
+
 async function getMatch(id) {
   if (!/^\d+$/.test(String(id || ""))) {
     throw new Error("ID pertandingan tidak valid.");
@@ -177,17 +208,11 @@ async function getMatch(id) {
 
   return {
     fixture: normalizeMatch(result),
-    homeTeam: result.homeTeam || {},
-    awayTeam: result.awayTeam || {},
     score: result.score || {},
     goals: result.goals || [],
     bookings: result.bookings || [],
     substitutions: result.substitutions || [],
-    referees: result.referees || [],
-    unavailable: [
-      "Statistik pertandingan rinci",
-      "Susunan pemain lengkap"
-    ]
+    referees: result.referees || []
   };
 }
 
@@ -209,17 +234,11 @@ async function getStandings(code) {
   };
 }
 
-function getJakartaDate() {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Jakarta",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit"
-  }).format(new Date());
-}
-
 export default async function handler(req, res) {
-  res.setHeader("Cache-Control", "s-maxage=60, stale-while-revalidate=120");
+  res.setHeader(
+    "Cache-Control",
+    "s-maxage=60, stale-while-revalidate=120"
+  );
 
   if (req.method !== "GET") {
     return send(res, 405, {
@@ -242,26 +261,37 @@ export default async function handler(req, res) {
 
     switch (type) {
       case "home": {
-        const today = getDate(date || getJakartaDate());
+        const today = validDate(date);
+        const nextWeek = addDays(today, 7);
 
-        const matches = await getMatches(
-          today,
-          today,
-          "ALL"
+        const [matches, leagues] = await Promise.all([
+          getMatches(today, nextWeek, "ALL"),
+          getCompetitions()
+        ]);
+
+        const todayMatches = matches.filter(
+          match => match.date?.slice(0, 10) === today
+        );
+
+        const upcoming = matches.filter(
+          match =>
+            match.date?.slice(0, 10) > today &&
+            !match.finished
         );
 
         data = {
           date: today,
-          matches,
+          matches: todayMatches,
+          upcoming,
           live: matches.filter(match => match.live),
-          leagues: LEAGUES
+          leagues
         };
         break;
       }
 
       case "matches": {
-        const from = getDate(dateFrom || date);
-        const to = getDate(dateTo || dateFrom || date);
+        const from = validDate(dateFrom || date);
+        const to = validDate(dateTo || dateFrom || date);
 
         data = await getMatches(
           from,
@@ -272,7 +302,7 @@ export default async function handler(req, res) {
       }
 
       case "leagues": {
-        data = LEAGUES;
+        data = await getCompetitions();
         break;
       }
 
@@ -302,17 +332,16 @@ export default async function handler(req, res) {
     console.error("Football Forum API:", error);
 
     const status = error.status || 500;
-
     let message = error.message || "Terjadi kesalahan.";
 
-    if (status === 403) {
-      message =
-        "Kompetisi atau data ini tidak tersedia pada paket API kamu.";
+    if (status === 401) {
+      message = "Token Football-Data.org tidak valid. Periksa FOOTBALL_DATA_TOKEN di Vercel.";
+    } else if (status === 403) {
+      message = "Data kompetisi ini tidak tersedia pada paket API kamu.";
     } else if (status === 429) {
-      message =
-        "Batas permintaan API tercapai. Tunggu sebentar lalu coba lagi.";
+      message = "Batas permintaan API tercapai. Tunggu sebentar lalu coba lagi.";
     } else if (status === 404) {
-      message = "Data pertandingan tidak ditemukan.";
+      message = "Data tidak ditemukan.";
     }
 
     return send(res, status, {
