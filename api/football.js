@@ -28,12 +28,17 @@ export default async function handler(req, res) {
       `https://v3.football.api-sports.io/${endpoints[type]}`
     );
 
-    url.searchParams.set("timezone", "Asia/Jakarta");
+    // Zona waktu Indonesia untuk endpoint yang mendukungnya
+    if (type !== "statistics") {
+      url.searchParams.set("timezone", "Asia/Jakarta");
+    }
 
+    // Live scores
     if (type === "livescores") {
       url.searchParams.set("live", "all");
     }
 
+    // Statistik pertandingan
     if (type === "statistics") {
       if (!req.query.fixture) {
         return res.status(400).json({
@@ -44,6 +49,7 @@ export default async function handler(req, res) {
       url.searchParams.set("fixture", req.query.fixture);
     }
 
+    // Jadwal pertandingan
     if (type === "fixtures") {
       const today = new Intl.DateTimeFormat("en-CA", {
         timeZone: "Asia/Jakarta",
