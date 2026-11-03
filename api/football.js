@@ -1,61 +1,11 @@
 
-const memoryCache = new Map();
+const cache = new Map();
 
 const TTL = {
   leagues: 6 * 60 * 60 * 1000,
-  matches: 60 * 1000,
-  details: 5 * 60 * 1000
+  matches: 30 * 1000,
+  details: 2 * 60 * 1000
 };
-
-function getCache(key) {
-  const item = memoryCache.get(key);
-
-  if (!item || Date.now() > item.expires) {
-    memoryCache.delete(key);
-    return null;
-  }
-
-  return item.data;
-}
-
-function saveCache(key, data, ttl) {
-  memoryCache.set(key, {
-    data,
-    expires: Date.now() + ttl
-  });
-}
-
-async function requestJSON(url, headers = {}) {
-  const response = await fetch(url, {
-    headers,
-    signal: AbortSignal.timeout(15000)
-  });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    const error = new Error(
-      data?.message || `Provider error ${response.status}`
-    );
-
-    error.status = response.status;
-    error.data = data;
-    throw error;
-  }
-
-  return data;
-}
-
-async function cachedRequest(key, ttl, request) {
-  const cached = getCache(key);
-
-  if (cached !== null) return cached;
-
-  const data = await request();
-  saveCache(key, data, ttl);
-
-  return data;
-}
 
 function getJakartaDate() {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -65,20 +15,55 @@ function getJakartaDate() {
     day: "2-digit"
   }).formatToParts(new Date());
 
-  const values = {};
+  const p = {};
+  parts.forEach(x => p[x.type] = x.value);
 
-  for (const part of parts) {
-    values[part.type] = part.value;
+  return `${p.year}-${p.month}-${p.day}`;
+}
+
+function getCached(key) {
+  const item = cache.get(key);
+  if (!item || Date.now() > item.expires) {
+    cache.delete(key);
+    return null;
+  }
+  return item.data;
+}
+
+function setCached(key, data, ttl) {
+  cache.set(key, {
+    data,
+    expires: Date.now() + ttl
+  });
+}
+
+async function requestJSON(url, key) {
+  const response = await fetch(url, {
+    headers: {
+      "x-rapidapi-key": key
+    },
+    signal: AbortSignal.timeout(15000)
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    const error = new Error(
+      data?.message || `Highlightly error ${response.status}`
+    );
+    error.status = response.status;
+    error.data = data;
+    throw error;
   }
 
-  return `${values.year}-${values.month}-${values.day}`;
+  return data;
 }
 
 function sendError(res, error) {
-  console.error("FOOTBALL API ERROR:", error);
+  console.error("FOOTBALL FORUM:", error);
 
   return res.status(error.status || 500).json({
-    error: "Gagal mengambil data sepak bola",
+    error: "Gagal mengambil data Highlightly",
     message: error.message,
     providerError: error.data || null
   });
@@ -88,120 +73,119 @@ export default async function handler(req, res) {
   const type = String(req.query.type || "");
   const source = String(req.query.source || "highlightly");
 
+  if (source !== "highlightly") {
+    return res.status(400).json({
+      error: "Sumber data yang digunakan adalah Highlightly"
+    });
+  }
+
+  const key = process.env.HIGHLIGHTLY_API_KEY;
+
+  if (!key) {
+    return res.status(500).json({
+      error: "HIGHLIGHTLY_API_KEY belum dipasang di Vercel"
+    });
+  }
+
   try {
-    if (source === "highlightly") {
-      const key = process.env.HIGHLIGHTLY_API_KEY;
+    const params = new URLSearchParams();
+    let path = "";
+    let ttl = TTL.details;
 
-      if (!key) {
-        return res.status(500).json({
-          error: "HIGHLIGHTLY_API_KEY belum dipasang di Vercel"
-        });
+    if (type === "hl-leagues") {
+      path = "/leagues";
+      ttl = TTL.leagues;
+
+      if (req.query.season) {
+        params.set("season", req.query.season);
       }
 
-      const params = new URLSearchParams();
-      let path = "";
-      let ttl = TTL.details;
+      if (req.query.countryCode) {
+        params.set("countryCode", req.query.countryCode);
+      }
+    }
 
-      if (type === "hl-leagues") {
-        path = "/leagues";
-        ttl = TTL.leagues;
+    else if (type === "hl-matches") {
+      path = "/matches";
+      ttl = TTL.matches;
 
-        if (req.query.season) {
-          params.set("season", req.query.season);
-        }
+      params.set("date", req.query.date || getJakartaDate());
 
-        if (req.query.countryCode) {
-          params.set("countryCode", req.query.countryCode);
-        }
+      if (req.query.leagueId) {
+        params.set("leagueId", req.query.leagueId);
       }
 
-      else if (type === "hl-matches") {
-        path = "/matches";
-        ttl = TTL.matches;
-
-        params.set("date", req.query.date || getJakartaDate());
-
-        if (req.query.leagueId) {
-          params.set("leagueId", req.query.leagueId);
-        }
-
-        if (req.query.countryCode) {
-          params.set("countryCode", req.query.countryCode);
-        }
-
-        if (req.query.limit) {
-          params.set("limit", req.query.limit);
-        }
+      if (req.query.countryCode) {
+        params.set("countryCode", req.query.countryCode);
       }
 
-      else if (
-        ["hl-statistics", "hl-lineups", "hl-events"].includes(type)
-      ) {
-        const id = req.query.id;
-
-        if (!id) {
-          return res.status(400).json({
-            error: "Parameter id wajib diisi"
-          });
-        }
-
-        const endpoint = {
-          "hl-statistics": "statistics",
-          "hl-lineups": "lineups",
-          "hl-events": "events"
-        }[type];
-
-        path = `/${endpoint}/${encodeURIComponent(id)}`;
+      if (req.query.limit) {
+        params.set("limit", req.query.limit);
       }
+    }
 
-      else if (type === "hl-h2h") {
-        const team1 = req.query.team1;
-        const team2 = req.query.team2;
+    else if (
+      ["hl-statistics", "hl-lineups", "hl-events"].includes(type)
+    ) {
+      const id = req.query.id;
 
-        if (!team1 || !team2) {
-          return res.status(400).json({
-            error: "Parameter team1 dan team2 wajib diisi"
-          });
-        }
-
-        path = "/head-2-head";
-
-        params.set("teamIdOne", team1);
-        params.set("teamIdTwo", team2);
-      }
-
-      else {
+      if (!id) {
         return res.status(400).json({
-          error: "Jenis Highlightly tidak valid"
+          error: "Parameter id wajib diisi"
         });
       }
 
-      const url =
-        `https://soccer.highlightly.net${path}` +
-        (params.toString() ? `?${params.toString()}` : "");
+      const endpoint = {
+        "hl-statistics": "statistics",
+        "hl-lineups": "lineups",
+        "hl-events": "events"
+      }[type];
 
-      const data = await cachedRequest(
-        `highlightly:${url}`,
-        ttl,
-        () => requestJSON(url, {
-          "x-rapidapi-key": key
-        })
-      );
+      path = `/${endpoint}/${encodeURIComponent(id)}`;
+    }
 
-      res.setHeader(
-        "Cache-Control",
-        "s-maxage=30, stale-while-revalidate=60"
-      );
+    else if (type === "hl-h2h") {
+      const team1 = req.query.team1;
+      const team2 = req.query.team2;
 
-      return res.status(200).json({
-        provider: "Highlightly",
-        type,
-        data
+      if (!team1 || !team2) {
+        return res.status(400).json({
+          error: "Parameter team1 dan team2 wajib diisi"
+        });
+      }
+
+      path = "/head-2-head";
+      params.set("teamIdOne", team1);
+      params.set("teamIdTwo", team2);
+    }
+
+    else {
+      return res.status(400).json({
+        error: "Jenis endpoint tidak dikenal"
       });
     }
 
-    return res.status(400).json({
-      error: "Gunakan source=highlightly"
+    const query = params.toString();
+    const url = `https://soccer.highlightly.net${path}` +
+      (query ? `?${query}` : "");
+
+    const cacheKey = `highlightly:${url}`;
+    let data = getCached(cacheKey);
+
+    if (data === null) {
+      data = await requestJSON(url, key);
+      setCached(cacheKey, data, ttl);
+    }
+
+    res.setHeader(
+      "Cache-Control",
+      "s-maxage=30, stale-while-revalidate=60"
+    );
+
+    return res.status(200).json({
+      provider: "Highlightly",
+      type,
+      data
     });
 
   } catch (error) {
