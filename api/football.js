@@ -11,9 +11,12 @@ export default async function handler(req, res) {
   const type = req.query.type || "fixtures";
 
   const endpoints = {
-    fixtures: "fixtures",
-    livescores: "fixtures",
-    leagues: "leagues"
+    const endpoints = {
+  fixtures: "fixtures",
+  livescores: "fixtures",
+  leagues: "leagues",
+  statistics: "fixtures/statistics"
+};
   };
 
   if (!endpoints[type]) {
