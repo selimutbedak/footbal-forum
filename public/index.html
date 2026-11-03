@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -67,9 +68,6 @@ select,.filter{background:var(--panel);color:var(--text);border:1px solid var(--
 .stat-row>span:first-child{text-align:left;font-weight:700}
 .stat-row>span:last-child{text-align:right;font-weight:700}
 .stat-center{text-align:center;font-size:12px;color:var(--muted)}
-.stat-bars{display:flex;gap:4px;margin-top:6px}
-.stat-bars span{height:4px;background:var(--green);border-radius:4px}
-.stat-bars span:last-child{background:#66736a}
 .lineup-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .lineup-team{background:var(--panel2);padding:12px;border-radius:8px}
 .player-line{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);font-size:12px}
@@ -171,11 +169,10 @@ th{color:var(--muted);font-weight:600}
   </section>
 </main>
 
-<div class="footer">FOOTBALL FORUM · Football data from multiple providers</div>
+<div class="footer">FOOTBALL FORUM · Football data from Highlightly</div>
 
 <script>
 const API="/api/football";
-
 let leagues=[];
 let selectedLeague=null;
 let selectedFixture=null;
@@ -186,6 +183,7 @@ let allTab="live";
 let detailTab="overview";
 let refreshTimer=null;
 let currentPage="dashboardPage";
+let requestNumber=0;
 
 const $=id=>document.getElementById(id);
 
@@ -195,8 +193,8 @@ function esc(value=""){
   })[c]);
 }
 
-async function api(type,params={},source="api-football"){
-  const query=new URLSearchParams({type,source,...params});
+async function api(type,params={}){
+  const query=new URLSearchParams({type,source:"highlightly",...params});
   const response=await fetch(`${API}?${query}`);
   const result=await response.json();
 
@@ -204,22 +202,10 @@ async function api(type,params={},source="api-football"){
     throw new Error(result.message||result.error||"Gagal mengambil data");
   }
 
-  if(source==="api-football"){
-    const payload=result.data||{};
-    if(payload.errors&&Object.keys(payload.errors).length){
-      throw new Error(JSON.stringify(payload.errors));
-    }
-    return payload.response||[];
-  }
-
-  if(source==="highlightly"){
-    const payload=result.data;
-    if(Array.isArray(payload?.data))return payload.data;
-    if(Array.isArray(payload))return payload;
-    return payload||{};
-  }
-
-  return result.data?.data||[];
+  const payload=result.data;
+  if(Array.isArray(payload?.data))return payload.data;
+  if(Array.isArray(payload))return payload;
+  return payload||{};
 }
 
 function today(){
@@ -232,10 +218,8 @@ function today(){
 function setPage(page){
   ["dashboardPage","leaguePage","matchPage","allMatchesPage","allLeaguesPage"]
     .forEach(id=>$(id).classList.add("hidden"));
-
   $(page).classList.remove("hidden");
   currentPage=page;
-
   document.querySelectorAll(".nav button").forEach(b=>{
     b.classList.toggle("active",b.dataset.page===page.replace("Page",""));
   });
@@ -251,13 +235,11 @@ function flag(code){
 
 function groupLeagues(items){
   const groups={};
-
   items.forEach(item=>{
     const country=item.country?.name||"International";
     if(!groups[country])groups[country]=[];
     groups[country].push(item);
   });
-
   return groups;
 }
 
@@ -273,9 +255,7 @@ function renderLeagues(items,target){
     <div class="league-list">
       ${groups[country].map(l=>`
         <div class="league-row" onclick="openLeague('${esc(l.league.id)}')">
-          ${l.league.logo
-            ?`<img src="${esc(l.league.logo)}" alt="">`
-            :`<span>${flag(l.country?.code)}</span>`}
+          ${l.league.logo?`<img src="${esc(l.league.logo)}" alt="">`:`<span>${flag(l.country?.code)}</span>`}
           <span class="league-name">${esc(l.league.name)}</span>
           <span class="league-meta">${esc((l.seasons||[]).map(s=>s.year).join(", "))}</span>
           <span class="arrow">›</span>
@@ -288,18 +268,14 @@ function renderLeagues(items,target){
 function normalizeHLLeague(item){
   return {
     league:{
-      id:item.id,
-      name:item.name,
-      logo:item.logo||null,
-      type:"League"
+      id:item.id,name:item.name,logo:item.logo||null,type:"League"
     },
     country:{
       name:item.country?.name||"International",
       code:item.country?.code||"World"
     },
     seasons:(item.seasons||[]).map(s=>({
-      year:s.season,
-      current:false
+      year:s.season,current:false
     })),
     _source:"highlightly"
   };
@@ -310,43 +286,27 @@ async function loadDashboard(){
     weekday:"long",day:"numeric",month:"long",year:"numeric",
     timeZone:"Asia/Jakarta"
   });
-
   $("dashboardError").textContent="";
   $("leagueContainer").innerHTML=`<div class="empty">Loading leagues...</div>`;
 
-  const results=await Promise.allSettled([
-    api("leagues",{current:"true"},"api-football"),
-    api("hl-leagues",{},"highlightly")
-  ]);
+  try{
+    const data=await api("hl-leagues",{});
+    leagues=data.map(normalizeHLLeague);
+    $("leagueCount").textContent=`${leagues.length} competitions`;
+    renderLeagues(leagues,"leagueContainer");
+    renderLeagues(leagues,"allLeagueContainer");
 
-  const football=results[0].status==="fulfilled"?results[0].value:[];
-  const highlight=results[1].status==="fulfilled"?results[1].value:[];
-
-  const converted=highlight.map(normalizeHLLeague);
-
-  const seen=new Set();
-
-  leagues=[...football,...converted].filter(item=>{
-    const key=`${item.country?.name||""}:${item.league?.name||""}`.toLowerCase();
-
-    if(seen.has(key))return false;
-    seen.add(key);
-    return true;
-  });
-
-  $("leagueCount").textContent=`${leagues.length} competitions`;
-
-  renderLeagues(leagues,"leagueContainer");
-  renderLeagues(leagues,"allLeagueContainer");
-
-  if(!football.length&&!highlight.length){
-    $("dashboardError").textContent="Kedua sumber liga belum dapat diakses.";
+    if(!leagues.length){
+      $("dashboardError").textContent="Belum ada data liga dari Highlightly.";
+    }
+  }catch(e){
+    $("dashboardError").textContent="Gagal mengambil liga: "+e.message;
+    $("leagueContainer").innerHTML=`<div class="empty">Tidak dapat memuat liga.</div>`;
   }
 }
 
 function openLeague(id){
   selectedLeague=leagues.find(x=>String(x.league.id)===String(id));
-
   if(!selectedLeague)return;
 
   $("selectedLeagueName").textContent=selectedLeague.league.name;
@@ -355,17 +315,12 @@ function openLeague(id){
   const seasons=(selectedLeague.seasons||[])
     .map(s=>s.year).filter(Boolean).sort((a,b)=>b-a);
 
-  $("seasonSelect").innerHTML=seasons.map(y=>
-    `<option value="${y}">${y}</option>`
-  ).join("");
-
+  $("seasonSelect").innerHTML=seasons.map(y=>`<option value="${y}">${y}</option>`).join("");
   if(!seasons.length){
-    $("seasonSelect").innerHTML=
-      `<option value="${new Date().getFullYear()}">${new Date().getFullYear()}</option>`;
+    $("seasonSelect").innerHTML=`<option value="${new Date().getFullYear()}">${new Date().getFullYear()}</option>`;
   }
 
   matchTab="live";
-
   document.querySelectorAll("[data-match-tab]").forEach(b=>{
     b.classList.toggle("active",b.dataset.matchTab===matchTab);
   });
@@ -374,34 +329,33 @@ function openLeague(id){
   loadLeagueMatches();
 }
 
-function statusCode(f){
-  return f.fixture?.status?.short||"";
-}
+function getHLStatus(m){
+  const state=m.state||{};
+  const raw=String(
+    state.description||state.status||state.short||""
+  ).toLowerCase().trim();
 
-function isLive(f){
-  return ["1H","HT","2H","ET","P","LIVE","BT","SUSP","INT"].includes(statusCode(f));
-}
+  if(
+    /not started|scheduled|upcoming|fixture|pending/.test(raw)||
+    raw==="ns"||raw==="tbd"
+  )return "NS";
 
-function isUpcoming(f){
-  return ["NS","TBD"].includes(statusCode(f));
-}
+  if(
+    /finished|full time|ended|after penalties|after extra time|complete/.test(raw)||
+    raw==="ft"||raw==="aet"||raw==="pen"
+  )return "FT";
 
-function isFinished(f){
-  return ["FT","AET","PEN","AWD","WO"].includes(statusCode(f));
-}
+  if(
+    /live|in progress|first half|1st half|second half|2nd half|half time|halftime|extra time|penalty shootout|break|interrupted|suspended/.test(raw)||
+    ["1h","2h","ht","et","p","bt","int","susp"].includes(raw)
+  )return "LIVE";
 
-function dateTime(date){
-  if(!date)return "—";
-
-  return new Date(date).toLocaleTimeString("id-ID",{
-    hour:"2-digit",minute:"2-digit",timeZone:"Asia/Jakarta"
-  });
+  return "UNKNOWN";
 }
 
 function normalizeHLMatch(m){
   const state=m.state||{};
   const current=state.score?.current;
-
   let homeScore=null;
   let awayScore=null;
 
@@ -409,25 +363,21 @@ function normalizeHLMatch(m){
     homeScore=current[0]??null;
     awayScore=current[1]??null;
   }else if(current&&typeof current==="object"){
-    homeScore=current.home??null;
-    awayScore=current.away??null;
+    homeScore=current.home??current.homeScore??null;
+    awayScore=current.away??current.awayScore??null;
   }
 
-  const description=(state.description||"").toLowerCase();
-
-  let short="NS";
-
-  if(description.includes("live")||description.includes("half"))short="LIVE";
-  else if(description.includes("finished")||description.includes("ended"))short="FT";
+  const status=getHLStatus(m);
+  const clock=state.clock;
 
   return {
     fixture:{
       id:m.id,
       date:m.date,
       status:{
-        short,
-        long:state.description||"Scheduled",
-        elapsed:state.clock
+        short:status,
+        long:state.description||"Status unavailable",
+        elapsed:typeof clock==="number"?clock:null
       },
       venue:{name:null},
       referee:null
@@ -451,50 +401,58 @@ function normalizeHLMatch(m){
       }
     },
     goals:{home:homeScore,away:awayScore},
-    _source:"highlightly"
+    _source:"highlightly",
+    _rawState:state
   };
+}
+
+function statusCode(f){
+  return f.fixture?.status?.short||"";
+}
+
+function isLive(f){return statusCode(f)==="LIVE";}
+function isUpcoming(f){return statusCode(f)==="NS";}
+function isFinished(f){return statusCode(f)==="FT";}
+
+function dateTime(date){
+  if(!date)return "—";
+  return new Date(date).toLocaleTimeString("id-ID",{
+    hour:"2-digit",minute:"2-digit",timeZone:"Asia/Jakarta"
+  });
+}
+
+function dateLabel(date){
+  if(!date)return "";
+  return new Date(date).toLocaleDateString("id-ID",{
+    day:"numeric",month:"short",timeZone:"Asia/Jakarta"
+  });
 }
 
 async function loadLeagueMatches(){
   if(!selectedLeague)return;
-
+  const thisRequest=++requestNumber;
   $("leagueMatches").innerHTML=`<div class="empty">Loading matches...</div>`;
 
-  const season=$("seasonSelect").value;
-  const isHL=selectedLeague._source==="highlightly";
-
   try{
-    let data=[];
+    const data=await api("hl-matches",{
+      leagueId:selectedLeague.league.id,
+      date:today()
+    });
 
-    if(isHL){
-      data=await api("hl-matches",{
-        leagueId:selectedLeague.league.id,
-        date:today()
-      },"highlightly");
-
-      data=data.map(normalizeHLMatch);
-    }else{
-      data=await api("fixtures",{
-        league:selectedLeague.league.id,
-        season
-      },"api-football");
-    }
-
-    leagueMatches=data;
+    if(thisRequest!==requestNumber)return;
+    leagueMatches=data.map(normalizeHLMatch);
     renderLeagueMatches();
-
   }catch(e){
-    $("leagueMatches").innerHTML=`
-      <div class="empty">
-        Gagal memuat pertandingan.<br><br>${esc(e.message)}
-      </div>`;
+    if(thisRequest!==requestNumber)return;
+    $("leagueMatches").innerHTML=`<div class="empty">Gagal memuat pertandingan.<br><br>${esc(e.message)}</div>`;
   }
 }
 
 function renderLeagueMatches(){
   const matches=leagueMatches.filter(f=>
     matchTab==="live"?isLive(f):
-    matchTab==="pre"?isUpcoming(f):isFinished(f)
+    matchTab==="pre"?isUpcoming(f):
+    isFinished(f)
   );
 
   $("leagueMatches").innerHTML=matches.length
@@ -506,18 +464,17 @@ function matchRow(f){
   const home=f.teams?.home||{};
   const away=f.teams?.away||{};
   const live=isLive(f);
-
-  const played=typeof f.goals?.home==="number"&&
-    typeof f.goals?.away==="number";
+  const hasScore=f.goals?.home!==null&&f.goals?.home!==undefined&&
+    f.goals?.away!==null&&f.goals?.away!==undefined;
 
   const time=live
-    ?`${f.fixture?.status?.elapsed??""}′`
+    ?`${f.fixture?.status?.elapsed??"LIVE"}′`
     :dateTime(f.fixture?.date);
 
   return `
     <div class="match-row" onclick="openMatch('${esc(f.fixture?.id)}')">
       <div class="match-time">
-        ${live?`<span class="live">● LIVE</span><br>${time}`:`<span>${time}</span>`}
+        ${live?`<span class="live">● LIVE</span><br>${time}`:`<span>${time}</span><br><span class="status">${dateLabel(f.fixture?.date)}</span>`}
       </div>
       <div class="match-teams">
         <div class="team-line">
@@ -530,108 +487,70 @@ function matchRow(f){
         </div>
       </div>
       <div class="score">
-        ${played?`${f.goals.home}<br>${f.goals.away}`:`<span class="status">${live?"LIVE":"vs"}</span>`}
+        ${hasScore?`${esc(f.goals.home)}<br>${esc(f.goals.away)}`:`<span class="status">${live?"LIVE":"vs"}</span>`}
       </div>
     </div>`;
 }
 
 async function loadAllMatches(){
+  const thisRequest=++requestNumber;
   $("allMatches").innerHTML=`<div class="empty">Loading matches...</div>`;
 
-  const results=await Promise.allSettled([
-    allTab==="live"
-      ?api("livescores",{},"api-football")
-      :api("fixtures",{date:today()},"api-football"),
-    api("hl-matches",{date:today()},"highlightly")
-  ]);
+  try{
+    const data=await api("hl-matches",{date:today()});
+    if(thisRequest!==requestNumber)return;
 
-  let combined=[];
+    const combined=data.map(normalizeHLMatch);
+    const filtered=combined.filter(f=>
+      allTab==="live"?isLive(f):
+      allTab==="pre"?isUpcoming(f):
+      isFinished(f)
+    );
 
-  if(results[0].status==="fulfilled"){
-    combined.push(...results[0].value);
+    const seen=new Set();
+    const unique=filtered.filter(f=>{
+      const key=`${f.teams?.home?.name}:${f.teams?.away?.name}:${f.fixture?.date}`;
+      if(seen.has(key))return false;
+      seen.add(key);
+      return true;
+    });
+
+    allMatchesCache=unique;
+    $("allMatches").innerHTML=unique.length
+      ?unique.map(matchRow).join("")
+      :`<div class="empty">No ${allTab} matches available.</div>`;
+  }catch(e){
+    if(thisRequest!==requestNumber)return;
+    $("allMatches").innerHTML=`<div class="empty">Gagal memuat pertandingan.<br><br>${esc(e.message)}</div>`;
   }
-
-  if(results[1].status==="fulfilled"){
-    combined.push(...results[1].value.map(normalizeHLMatch));
-  }
-
-  const filtered=combined.filter(f=>
-    allTab==="live"?isLive(f):
-    allTab==="pre"?isUpcoming(f):isFinished(f)
-  );
-
-  const seen=new Set();
-
-  const unique=filtered.filter(f=>{
-    const key=`${f.teams?.home?.name}:${f.teams?.away?.name}:${f.fixture?.date}`;
-
-    if(seen.has(key))return false;
-    seen.add(key);
-    return true;
-  });
-
-  allMatchesCache=unique;
-
-  $("allMatches").innerHTML=unique.length
-    ?unique.map(matchRow).join("")
-    :`<div class="empty">No ${allTab} matches available.</div>`;
 }
 
 async function openMatch(id){
-  const match=leagueMatches.find(f=>
-    String(f.fixture?.id)===String(id)
-  )||allMatchesCache.find(f=>
-    String(f.fixture?.id)===String(id)
-  );
+  const match=leagueMatches.find(f=>String(f.fixture?.id)===String(id))||
+    allMatchesCache.find(f=>String(f.fixture?.id)===String(id));
 
-  selectedFixture=match||{fixture:{id}};
-
+  selectedFixture=match||{fixture:{id},_source:"highlightly"};
   setPage("matchPage");
-
   $("matchHeader").innerHTML=`<div class="empty">Loading match...</div>`;
   $("matchDetails").innerHTML=`<div class="empty">Loading...</div>`;
 
   detailTab="overview";
-
   document.querySelectorAll("[data-detail]").forEach(b=>{
     b.classList.toggle("active",b.dataset.detail==="overview");
   });
 
-  try{
-    if(match?._source==="highlightly"){
-      renderMatchHeader(match);
-      loadMatchDetail();
-      return;
-    }
-
-    const data=await api("fixture",{id},"api-football");
-    const full=data[0]||match;
-
-    if(!full)throw new Error("Match data not found");
-
-    selectedFixture=full;
-    renderMatchHeader(full);
-    loadMatchDetail();
-
-  }catch(e){
-    if(match){
-      renderMatchHeader(match);
-      loadMatchDetail();
-    }else{
-      $("matchHeader").innerHTML=`<div class="empty">${esc(e.message)}</div>`;
-    }
-  }
+  renderMatchHeader(selectedFixture);
+  loadMatchDetail();
 }
 
 function renderMatchHeader(f){
   const h=f.teams?.home||{};
   const a=f.teams?.away||{};
-
   const hasScore=f.goals?.home!==null&&f.goals?.home!==undefined&&
     f.goals?.away!==null&&f.goals?.away!==undefined;
 
   $("matchHeader").innerHTML=`
-    <div class="muted small">${esc(f.league?.name||"")} · ${esc(f.fixture?.venue?.name||"")}</div>
+    <div class="muted small">${esc(f.league?.name||"")}</div>
     <div class="teams">
       <div class="club">
         ${h.logo?`<img src="${esc(h.logo)}" alt="">`:""}
@@ -646,117 +565,61 @@ function renderMatchHeader(f){
         <strong>${esc(a.name||"Away")}</strong>
       </div>
     </div>
-    <div class="muted small">
-      ${f.fixture?.date?new Date(f.fixture.date).toLocaleString("id-ID",{timeZone:"Asia/Jakarta"}):""}
-    </div>
-    ${f._source==="highlightly"?`<div class="badge">Highlightly data</div>`:""}
+    <div class="muted small">${f.fixture?.date?new Date(f.fixture.date).toLocaleString("id-ID",{timeZone:"Asia/Jakarta"}):""}</div>
+    <div class="badge">Highlightly data</div>
   `;
 }
 
 async function loadMatchDetail(){
   const f=selectedFixture;
   const id=f?.fixture?.id;
-
   if(!id)return;
+
+  if(detailTab==="overview"){
+    $("matchDetails").innerHTML=`
+      <h3>Match Overview</h3>
+      <p class="muted small">Informasi pertandingan</p>
+      <div class="stat-row"><span>League</span><span class="stat-center">${esc(f.league?.name||"—")}</span><span></span></div>
+      <div class="stat-row"><span>Status</span><span class="stat-center">${esc(f.fixture?.status?.long||"—")}</span><span></span></div>
+      <div class="stat-row"><span>Kick-off</span><span class="stat-center">${esc(f.fixture?.date?new Date(f.fixture.date).toLocaleString("id-ID",{timeZone:"Asia/Jakarta"}):"—")}</span><span></span></div>
+      <div class="notice">Statistik dan susunan pemain ditampilkan jika tersedia dari penyedia data.</div>`;
+    return;
+  }
 
   $("matchDetails").innerHTML=`<div class="empty">Loading ${detailTab}...</div>`;
 
   try{
-    if(detailTab==="overview"){
-      $("matchDetails").innerHTML=`
-        <h3>Match Overview</h3>
-        <p class="muted small">Informasi pertandingan</p>
-        <div class="stat-row"><span>League</span><span class="stat-center">${esc(f.league?.name||"—")}</span><span></span></div>
-        <div class="stat-row"><span>Venue</span><span class="stat-center">${esc(f.fixture?.venue?.name||"—")}</span><span></span></div>
-        <div class="stat-row"><span>Referee</span><span class="stat-center">${esc(f.fixture?.referee||"—")}</span><span></span></div>
-        <div class="notice">Statistik dan susunan pemain ditampilkan jika tersedia dari penyedia data.</div>`;
-      return;
-    }
-
-    const isHL=f._source==="highlightly";
-
     if(detailTab==="statistics"){
-      const data=isHL
-        ?await api("hl-statistics",{id},"highlightly")
-        :await api("statistics",{fixture:id},"api-football");
-
-      isHL?renderHLStatistics(data):renderStatistics(data);
+      const data=await api("hl-statistics",{id});
+      renderHLStatistics(data);
       return;
     }
-
     if(detailTab==="lineups"){
-      const data=isHL
-        ?await api("hl-lineups",{id},"highlightly")
-        :await api("lineups",{fixture:id},"api-football");
-
-      isHL?renderHLLineups(data):renderLineups(data);
+      const data=await api("hl-lineups",{id});
+      renderHLLineups(data);
       return;
     }
-
     if(detailTab==="players"){
-      if(isHL){
-        $("matchDetails").innerHTML=`<div class="empty">Player ratings belum tersedia untuk sumber Highlightly ini.</div>`;
-      }else{
-        const data=await api("players",{fixture:id},"api-football");
-        renderPlayers(data);
-      }
+      $("matchDetails").innerHTML=`<div class="empty">Player ratings belum tersedia dari sumber ini.</div>`;
       return;
     }
-
     if(detailTab==="h2h"){
       const h=f.teams?.home?.id;
       const a=f.teams?.away?.id;
-
-      if(isHL){
-        const data=await api("hl-h2h",{team1:h,team2:a},"highlightly");
-        renderHLH2H(data);
-      }else{
-        const data=await api("h2h",{h2h:`${h}-${a}`,last:10},"api-football");
-        renderH2H(data);
-      }
+      const data=await api("hl-h2h",{team1:h,team2:a});
+      renderHLH2H(data);
       return;
     }
-
     if(detailTab==="predictions"){
-      if(isHL){
-        $("matchDetails").innerHTML=`<div class="empty">Prediksi belum tersedia untuk sumber Highlightly ini.</div>`;
-      }else{
-        const data=await api("predictions",{fixture:id},"api-football");
-        renderPredictions(data);
-      }
+      $("matchDetails").innerHTML=`<div class="empty">Prediksi belum tersedia dari sumber ini.</div>`;
     }
-
   }catch(e){
-    $("matchDetails").innerHTML=`
-      <div class="empty">${esc(e.message)}<br><br>Data belum tersedia atau provider tidak mendukung pertandingan ini.</div>`;
+    $("matchDetails").innerHTML=`<div class="empty">${esc(e.message)}<br><br>Data belum tersedia atau belum didukung provider.</div>`;
   }
-}
-
-function renderStatistics(data){
-  if(!data.length){
-    $("matchDetails").innerHTML=`<div class="empty">Statistics are not available for this match.</div>`;
-    return;
-  }
-
-  const home=data[0]?.statistics||[];
-  const away=data[1]?.statistics||[];
-
-  $("matchDetails").innerHTML=`
-    <h3>Team Statistics</h3>
-    ${home.map(s=>{
-      const other=away.find(x=>x.type===s.type);
-      return `
-        <div class="stat-row">
-          <span>${esc(s.value??"—")}</span>
-          <span class="stat-center">${esc(s.type)}</span>
-          <span>${esc(other?.value??"—")}</span>
-        </div>`;
-    }).join("")}`;
 }
 
 function renderHLStatistics(data){
   const teams=Object.values(data||{}).filter(x=>x&&x.team);
-
   if(!teams.length||!teams.some(t=>(t.statistics||[]).length)){
     $("matchDetails").innerHTML=`<div class="empty">Statistik belum tersedia untuk pertandingan ini.</div>`;
     return;
@@ -764,12 +627,10 @@ function renderHLStatistics(data){
 
   const left=teams[0]?.statistics||[];
   const right=teams[1]?.statistics||[];
-
   const getValue=(arr,type)=>{
     const item=arr.find(x=>(x.type||x.name)===type);
     return item?.value??"—";
   };
-
   const types=[...new Set([...left,...right].map(x=>x.type||x.name).filter(Boolean))];
 
   $("matchDetails").innerHTML=`
@@ -782,39 +643,8 @@ function renderHLStatistics(data){
       </div>`).join("")}`;
 }
 
-function renderLineups(data){
-  if(!data.length){
-    $("matchDetails").innerHTML=`<div class="empty">Official lineups are not available.</div>`;
-    return;
-  }
-
-  $("matchDetails").innerHTML=`
-    <h3>Official Lineups</h3>
-    <div class="lineup-grid">
-      ${data.map(team=>`
-        <div class="lineup-team">
-          <strong>${esc(team.team?.name)}</strong>
-          <div class="muted small">${esc(team.formation||"Formation unavailable")}</div>
-          <div class="pitch">⚽<br>Starting XI</div>
-          ${(team.startXI||[]).map(p=>`
-            <div class="player-line">
-              <span class="player-number">${esc(p.player?.number??"")}</span>
-              <span>${esc(p.player?.name)}</span>
-              <span class="rating">${esc(p.player?.pos||"")}</span>
-            </div>`).join("")}
-          <br><strong class="small">Substitutes</strong>
-          ${(team.substitutes||[]).map(p=>`
-            <div class="player-line">
-              <span class="player-number">${esc(p.player?.number??"")}</span>
-              <span>${esc(p.player?.name)}</span>
-            </div>`).join("")}
-        </div>`).join("")}
-    </div>`;
-}
-
 function renderHLLineups(data){
   const teams=[data?.homeTeam,data?.awayTeam].filter(Boolean);
-
   if(!teams.length||!teams.some(t=>(t.initialLineup||[]).length||(t.substitutes||[]).length)){
     $("matchDetails").innerHTML=`<div class="empty">Lineup belum dipublikasikan atau belum tersedia.</div>`;
     return;
@@ -842,71 +672,17 @@ function renderHLLineups(data){
     </div>`;
 }
 
-function renderPlayers(data){
-  if(!data.length){
-    $("matchDetails").innerHTML=`<div class="empty">Player ratings are not available yet.</div>`;
-    return;
-  }
-
-  $("matchDetails").innerHTML=`
-    <h3>Player Ratings & Performance</h3>
-    <div class="lineup-grid">
-      ${data.map(team=>`
-        <div>
-          <strong>${esc(team.team?.name)}</strong>
-          <div class="table-wrap"><table>
-            <thead><tr><th>Player</th><th>Min</th><th>Rating</th><th>Goals</th><th>Assists</th></tr></thead>
-            <tbody>
-              ${(team.players||[]).map(p=>`
-                <tr>
-                  <td>${esc(p.player?.name)}</td>
-                  <td>${esc(p.statistics?.[0]?.games?.minutes??"—")}</td>
-                  <td style="color:var(--green);font-weight:700">${esc(p.statistics?.[0]?.games?.rating??"—")}</td>
-                  <td>${esc(p.statistics?.[0]?.goals?.total??0)}</td>
-                  <td>${esc(p.statistics?.[0]?.goals?.assists??0)}</td>
-                </tr>`).join("")}
-            </tbody>
-          </table></div>
-        </div>`).join("")}
-    </div>`;
-}
-
-function renderH2H(data){
-  $("matchDetails").innerHTML=data.length
-    ?`<h3>Last Head-to-Head Matches</h3><div class="match-list">${data.map(matchRow).join("")}</div>`
-    :`<div class="empty">No H2H history available.</div>`;
-}
-
 function renderHLH2H(data){
   const list=Array.isArray(data)?data:(data?.data||[]);
   const matches=list.map(normalizeHLMatch);
-
   $("matchDetails").innerHTML=matches.length
     ?`<h3>Head-to-Head · Highlightly</h3><div class="match-list">${matches.map(matchRow).join("")}</div>`
     :`<div class="empty">No H2H history available.</div>`;
 }
 
-function renderPredictions(data){
-  if(!data.length){
-    $("matchDetails").innerHTML=`<div class="empty">Predictions are not available for this match.</div>`;
-    return;
-  }
-
-  const p=data[0].predictions||{};
-  const percent=p.percent||{};
-
-  $("matchDetails").innerHTML=`
-    <h3>Match Predictions</h3>
-    <div class="stat-row"><span>${esc(percent.home||"—")}</span><span class="stat-center">Home win</span><span>${esc(percent.away||"—")}</span></div>
-    <div class="stat-row"><span>${esc(percent.draw||"—")}</span><span class="stat-center">Draw</span><span></span></div>
-    <p class="muted small">${esc(p.advice||"Prediction advice unavailable")}</p>
-    <p>Predicted winner: <strong>${esc(p.winner?.name||"No clear winner")}</strong></p>`;
-}
-
 document.querySelectorAll("[data-page]").forEach(button=>{
   button.addEventListener("click",()=>{
     const page=button.dataset.page;
-
     if(page==="dashboard")showDashboard();
     if(page==="matches"){setPage("allMatchesPage");loadAllMatches();}
     if(page==="leagues")setPage("allLeaguesPage");
@@ -916,11 +692,9 @@ document.querySelectorAll("[data-page]").forEach(button=>{
 document.querySelectorAll("[data-match-tab]").forEach(button=>{
   button.addEventListener("click",()=>{
     matchTab=button.dataset.matchTab;
-
     document.querySelectorAll("[data-match-tab]").forEach(b=>{
       b.classList.toggle("active",b===button);
     });
-
     renderLeagueMatches();
   });
 });
@@ -928,11 +702,9 @@ document.querySelectorAll("[data-match-tab]").forEach(button=>{
 document.querySelectorAll("[data-all-tab]").forEach(button=>{
   button.addEventListener("click",()=>{
     allTab=button.dataset.allTab;
-
     document.querySelectorAll("[data-all-tab]").forEach(b=>{
       b.classList.toggle("active",b===button);
     });
-
     loadAllMatches();
   });
 });
@@ -940,34 +712,28 @@ document.querySelectorAll("[data-all-tab]").forEach(button=>{
 document.querySelectorAll("[data-detail]").forEach(button=>{
   button.addEventListener("click",()=>{
     detailTab=button.dataset.detail;
-
     document.querySelectorAll("[data-detail]").forEach(b=>{
       b.classList.toggle("active",b===button);
     });
-
     loadMatchDetail();
   });
 });
 
 $("search").addEventListener("input",e=>{
   const q=e.target.value.toLowerCase();
-
   const filtered=leagues.filter(l=>
     `${l.league.name} ${l.country?.name||""}`.toLowerCase().includes(q)
   );
-
   renderLeagues(filtered,"leagueContainer");
 });
 
 async function initialize(){
   await loadDashboard();
-
   if(refreshTimer)clearInterval(refreshTimer);
-
   refreshTimer=setInterval(()=>{
     if(currentPage==="leaguePage"&&selectedLeague)loadLeagueMatches();
     if(currentPage==="allMatchesPage")loadAllMatches();
-  },180000);
+  },60000);
 }
 
 initialize();
