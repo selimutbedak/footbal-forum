@@ -501,6 +501,26 @@ function filterPlayers() {
   });
 }
 </script>
+<script>
+async function loadFootballData(type = "livescores") {
+  try {
+    const response = await fetch(`/api/football?type=${type}`);
+    const data = await response.json();
 
+    if (!response.ok) {
+      throw new Error(data.error || "Gagal mengambil data");
+    }
+
+    console.log("Data Sportmonks:", data);
+    return data;
+  } catch (error) {
+    console.error("API Error:", error);
+    return null;
+  }
+}
+
+// Tes koneksi API
+loadFootballData("livescores");
+<script>
 </body>
 </html>
