@@ -33,8 +33,15 @@ export default async function handler(req, res) {
     // Zona waktu Indonesia
     url.searchParams.set("timezone", "Asia/Jakarta");
 
-    if (type === "livescores") {
-      url.searchParams.set("live", "all");
+    if (type === "statistics") {
+  if (!req.query.fixture) {
+    return res.status(400).json({
+      error: "ID pertandingan wajib diisi"
+    });
+  }
+
+  url.searchParams.set("fixture", req.query.fixture);
+}
     }
 
     if (type === "fixtures") {
