@@ -1,712 +1,556 @@
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FOOTBALL FORUM</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FOOTBALL FORUM</title>
 
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    body {
-      font-family: Arial, Helvetica, sans-serif;
-      background: #f5f6f8;
-      color: #20242b;
-    }
-
-    header {
-      background: #fff;
-      border-bottom: 1px solid #e5e7eb;
-      padding: 18px 5%;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 15px;
-    }
-
-    .brand {
-      font-size: 21px;
-      font-weight: 800;
-      letter-spacing: -0.5px;
-    }
-
-    .brand span {
-      color: #16834a;
-    }
-
-    nav {
-      display: flex;
-      gap: 7px;
-      flex-wrap: wrap;
-    }
-
-    nav button {
-      border: 0;
-      background: transparent;
-      padding: 10px 13px;
-      border-radius: 7px;
-      cursor: pointer;
-      color: #606873;
-      font-size: 14px;
-    }
-
-    nav button.active,
-    nav button:hover {
-      background: #eaf5ee;
-      color: #16834a;
-    }
-
-    main {
-      max-width: 1250px;
-      margin: 28px auto;
-      padding: 0 20px;
-    }
-
-    .page {
-      display: none;
-    }
-
-    .page.active {
-      display: block;
-    }
-
-    .page-heading {
-      margin-bottom: 22px;
-    }
-
-    .page-heading h1 {
-      font-size: 25px;
-      margin-bottom: 7px;
-    }
-
-    .page-heading p {
-      color: #7b838d;
-      font-size: 14px;
-    }
-
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 15px;
-      margin-bottom: 25px;
-    }
-
-    .stat-card,
-    .panel {
-      background: #fff;
-      border: 1px solid #e8eaed;
-      border-radius: 10px;
-      padding: 18px;
-    }
-
-    .stat-card p {
-      font-size: 13px;
-      color: #858c96;
-      margin-bottom: 10px;
-    }
-
-    .stat-card h2 {
-      font-size: 25px;
-    }
-
-    .panel {
-      margin-bottom: 20px;
-    }
-
-    .panel-heading {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 16px;
-      flex-wrap: wrap;
-    }
-
-    .panel-heading h2 {
-      font-size: 17px;
-    }
-
-    .muted {
-      color: #858c96;
-      font-size: 13px;
-    }
-
-    .match-row {
-      display: grid;
-      grid-template-columns: 1fr 100px 1fr;
-      align-items: center;
-      gap: 12px;
-      padding: 14px 4px;
-      border-top: 1px solid #edf0f2;
-    }
-
-    .team {
-      display: flex;
-      align-items: center;
-      gap: 9px;
-      font-size: 14px;
-    }
-
-    .team:last-child {
-      justify-content: flex-end;
-      text-align: right;
-    }
-
-    .team img {
-      width: 25px;
-      height: 25px;
-      object-fit: contain;
-    }
-
-    .match-score {
-      text-align: center;
-      font-weight: 700;
-      font-size: 15px;
-    }
-
-    .match-score small {
-      display: block;
-      color: #858c96;
-      font-size: 11px;
-      font-weight: 400;
-      margin-top: 5px;
-    }
-
-    .live-label {
-      color: #d83c3c;
-      font-size: 11px;
-      font-weight: 700;
-    }
-
-    .search-box {
-      width: 100%;
-      padding: 12px 14px;
-      border: 1px solid #e0e3e7;
-      border-radius: 8px;
-      outline: none;
-      font-size: 14px;
-      margin-bottom: 15px;
-      background: #fff;
-    }
-
-    .search-box:focus {
-      border-color: #16834a;
-    }
-
-    .country-card {
-      background: #fff;
-      border: 1px solid #e7e9ed;
-      border-radius: 9px;
-      margin-bottom: 10px;
-      overflow: hidden;
-    }
-
-    .country-card summary {
-      cursor: pointer;
-      list-style: none;
-      padding: 16px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 14px;
-      font-weight: 700;
-    }
-
-    .country-card summary::-webkit-details-marker {
-      display: none;
-    }
-
-    .country-card summary:hover {
-      background: #fafbfc;
-    }
-
-    .country-count {
-      color: #858c96;
-      font-size: 12px;
-      font-weight: 400;
-    }
-
-    .league-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 12px 16px;
-      border-top: 1px solid #f0f1f3;
-      font-size: 14px;
-    }
-
-    .league-row img {
-      width: 28px;
-      height: 28px;
-      object-fit: contain;
-    }
-
-    .league-info {
-      flex: 1;
-    }
-
-    .league-info small {
-      display: block;
-      color: #858c96;
-      margin-top: 4px;
-      font-size: 11px;
-    }
-
-    .status-message {
-      padding: 20px;
-      text-align: center;
-      color: #858c96;
-      font-size: 14px;
-    }
-
-    .refresh-button {
-      border: 1px solid #e0e3e7;
-      background: white;
-      padding: 8px 12px;
-      border-radius: 7px;
-      cursor: pointer;
-      font-size: 12px;
-    }
-
-    .refresh-button:hover {
-      background: #f5f6f8;
-    }
-
-    footer {
-      text-align: center;
-      padding: 30px 15px;
-      color: #9299a2;
-      font-size: 12px;
-    }
-
-    @media (max-width: 750px) {
-      .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-
-      header {
-        padding: 15px 18px;
-      }
-
-      main {
-        margin-top: 22px;
-        padding: 0 14px;
-      }
-
-      .page-heading h1 {
-        font-size: 22px;
-      }
-
-      .match-row {
-        grid-template-columns: 1fr 65px 1fr;
-        gap: 5px;
-      }
-
-      .team {
-        font-size: 12px;
-      }
-    }
-  </style>
+<style>
+:root {
+  --bg: #101310;
+  --panel: #191e1a;
+  --panel2: #202720;
+  --border: #2b332d;
+  --text: #edf2ed;
+  --muted: #89958b;
+  --green: #55c879;
+  --red: #f06464;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+}
+header {
+  background: #151a16;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.header-inner {
+  max-width: 1400px;
+  margin: auto;
+  min-height: 70px;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+.logo {
+  font-size: 21px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.logo span { color: var(--green); }
+nav { display: flex; gap: 5px; overflow-x: auto; }
+nav button {
+  background: transparent;
+  color: var(--muted);
+  border: 0;
+  padding: 12px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  border-radius: 7px;
+}
+nav button.active, nav button:hover {
+  background: #243329;
+  color: var(--green);
+}
+.container {
+  max-width: 1400px;
+  margin: 28px auto;
+  padding: 0 24px;
+}
+.page { display: none; }
+.page.active { display: block; }
+.heading {
+  margin-bottom: 22px;
+}
+.heading h1 { font-size: 25px; margin-bottom: 7px; }
+.heading p { color: var(--muted); }
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.card, .panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.card { padding: 18px; }
+.card p { color: var(--muted); margin-bottom: 12px; }
+.card h2 { font-size: 26px; }
+.green { color: var(--green); }
+.panel { padding: 18px; margin-bottom: 18px; }
+.panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.panel-head h2 { font-size: 16px; }
+.muted { color: var(--muted); }
+.small { font-size: 12px; }
+button.action {
+  border: 1px solid var(--border);
+  background: var(--panel2);
+  color: var(--text);
+  border-radius: 7px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+button.action:hover { border-color: var(--green); }
+.match {
+  display: grid;
+  grid-template-columns: 1fr 100px 1fr;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 2px;
+  border-top: 1px solid var(--border);
+}
+.team {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.team.away { justify-content: flex-end; text-align: right; }
+.team img { width: 26px; height: 26px; object-fit: contain; }
+.score { text-align: center; font-weight: 700; }
+.score small { display: block; margin-top: 5px; font-weight: 400; color: var(--muted); }
+.live { color: var(--red) !important; }
+.search {
+  width: 100%;
+  padding: 13px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 8px;
+  margin-bottom: 15px;
+  outline: none;
+}
+.search:focus { border-color: var(--green); }
+.country {
+  border: 1px solid var(--border);
+  background: var(--panel);
+  border-radius: 9px;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+.country summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 700;
+}
+.country summary::-webkit-details-marker { display: none; }
+.country summary:hover { background: var(--panel2); }
+.league {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.league img { width: 28px; height: 28px; object-fit: contain; }
+.league small { display: block; color: var(--muted); margin-top: 4px; }
+.message {
+  padding: 24px;
+  text-align: center;
+  color: var(--muted);
+  line-height: 1.7;
+}
+footer {
+  border-top: 1px solid var(--border);
+  text-align: center;
+  padding: 25px;
+  color: var(--muted);
+  font-size: 12px;
+}
+@media(max-width: 750px) {
+  .header-inner { padding: 14px; flex-direction: column; align-items: flex-start; }
+  nav { width: 100%; }
+  nav button { padding: 10px; font-size: 12px; }
+  .container { padding: 0 14px; }
+  .grid { grid-template-columns: repeat(2, 1fr); }
+  .match { grid-template-columns: 1fr 65px 1fr; gap: 5px; }
+  .team { font-size: 12px; }
+  .heading h1 { font-size: 22px; }
+}
+</style>
 </head>
 
 <body>
 
 <header>
-  <div class="brand">FOOTBALL <span>FORUM</span></div>
-
-  <nav>
-    <button class="active" onclick="showPage('overview', this)">Overview</button>
-    <button onclick="showPage('live', this)">Live Scores</button>
-    <button onclick="showPage('players', this)">Players</button>
-    <button onclick="showPage('leagues', this)">Leagues</button>
-  </nav>
+  <div class="header-inner">
+    <div class="logo">FOOTBALL <span>FORUM</span></div>
+    <nav>
+      <button class="active" onclick="openPage('overview',this)">Overview</button>
+      <button onclick="openPage('live',this)">Live Scores</button>
+      <button onclick="openPage('leagues',this)">Leagues</button>
+      <button onclick="openPage('players',this)">Players</button>
+      <button onclick="openPage('statistics',this)">Statistics</button>
+    </nav>
+  </div>
 </header>
 
-<main>
+<main class="container">
 
-  <!-- OVERVIEW -->
-  <section id="overview" class="page active">
-    <div class="page-heading">
-      <h1>Overview</h1>
-      <p>Football matches and information from around the world.</p>
+<section id="overview" class="page active">
+  <div class="heading">
+    <h1>Football Overview</h1>
+    <p>Global football matches and competition data.</p>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <p>Today's Matches</p>
+      <h2 id="todayCount">-</h2>
     </div>
-
-    <div class="stats-grid">
-      <div class="stat-card">
-        <p>Today's Matches</p>
-        <h2 id="todayCount">-</h2>
-      </div>
-
-      <div class="stat-card">
-        <p>Live Matches</p>
-        <h2 id="liveCount">-</h2>
-      </div>
-
-      <div class="stat-card">
-        <p>Countries</p>
-        <h2 id="countryCount">-</h2>
-      </div>
-
-      <div class="stat-card">
-        <p>Leagues</p>
-        <h2 id="leagueCount">-</h2>
-      </div>
+    <div class="card">
+      <p>Live Matches</p>
+      <h2 class="green" id="liveCount">-</h2>
     </div>
-
-    <div class="panel">
-      <div class="panel-heading">
-        <h2>Today's Matches</h2>
-        <button class="refresh-button" onclick="loadFixtures()">Refresh</button>
-      </div>
-      <div id="todayMatches" class="status-message">Loading matches...</div>
+    <div class="card">
+      <p>Countries</p>
+      <h2 id="countryCount">-</h2>
     </div>
-  </section>
-
-  <!-- LIVE SCORES -->
-  <section id="live" class="page">
-    <div class="page-heading">
-      <h1>Live Scores</h1>
-      <p>Live football matches from available competitions.</p>
+    <div class="card">
+      <p>Leagues</p>
+      <h2 id="leagueCount">-</h2>
     </div>
+  </div>
 
-    <div class="panel">
-      <div class="panel-heading">
-        <h2>Live Matches</h2>
-        <button class="refresh-button" onclick="loadLive()">Refresh</button>
-      </div>
-      <div id="liveMatches" class="status-message">Loading live matches...</div>
+  <div class="panel">
+    <div class="panel-head">
+      <h2>Today's Matches</h2>
+      <button class="action" onclick="loadFixtures()">Refresh</button>
     </div>
-  </section>
+    <div id="todayMatches" class="message">Loading matches...</div>
+  </div>
+</section>
 
-  <!-- PLAYERS -->
-  <section id="players" class="page">
-    <div class="page-heading">
-      <h1>Players</h1>
-      <p>Player performance and statistics.</p>
+<section id="live" class="page">
+  <div class="heading">
+    <h1>Live Scores</h1>
+    <p>Currently live football matches.</p>
+  </div>
+  <div class="panel">
+    <div class="panel-head">
+      <h2>Live Match Center</h2>
+      <button class="action" onclick="loadLive()">Refresh</button>
     </div>
+    <div id="liveMatches" class="message">Loading live matches...</div>
+  </div>
+</section>
 
-    <div class="panel">
-      <div class="status-message">
-        Player statistics are not connected yet.
-        <br><br>
-        Detailed player data will appear here when the required API endpoint is added.
-      </div>
+<section id="leagues" class="page">
+  <div class="heading">
+    <h1>Leagues</h1>
+    <p>Explore football competitions by country.</p>
+  </div>
+  <input id="leagueSearch" class="search" placeholder="Search country or league..." oninput="filterLeagues()">
+  <div id="leaguesList" class="message">Loading leagues...</div>
+</section>
+
+<section id="players" class="page">
+  <div class="heading">
+    <h1>Players</h1>
+    <p>Player performance and individual statistics.</p>
+  </div>
+  <div class="panel">
+    <div class="message">
+      Player data is not connected yet.<br>
+      This section will be connected to a player statistics API.
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- LEAGUES -->
-  <section id="leagues" class="page">
-    <div class="page-heading">
-      <h1>Leagues by Country</h1>
-      <p>Browse leagues from countries around the world.</p>
+<section id="statistics" class="page">
+  <div class="heading">
+    <h1>Statistics</h1>
+    <p>Team performance, match analysis and advanced metrics.</p>
+  </div>
+  <div class="grid">
+    <div class="card"><p>Team Statistics</p><h2>—</h2></div>
+    <div class="card"><p>Expected Goals</p><h2>—</h2></div>
+    <div class="card"><p>Referee Data</p><h2>—</h2></div>
+    <div class="card"><p>Player Ratings</p><h2>—</h2></div>
+  </div>
+  <div class="panel">
+    <div class="message">
+      Advanced statistics are not connected yet.<br>
+      No estimated or invented statistics are displayed.
     </div>
-
-    <input
-      id="leagueSearch"
-      class="search-box"
-      type="search"
-      placeholder="Search country or league..."
-      oninput="filterLeagues()"
-    >
-
-    <div id="leaguesList" class="status-message">
-      Loading leagues...
-    </div>
-  </section>
+  </div>
+</section>
 
 </main>
 
-<footer>
-  FOOTBALL FORUM · Global Football Data
-</footer>
+<footer>FOOTBALL FORUM · Global Football Data</footer>
 
 <script>
-  const API_BASE = "/api/football";
+const API = "/api/football";
 
-  let leagueData = [];
-  let fixtureData = [];
-  let liveData = [];
+let leagueData = [];
+let fixtureData = [];
+let liveData = [];
 
-  function showPage(pageId, button) {
-    document.querySelectorAll(".page").forEach(page => {
-      page.classList.remove("active");
-    });
+function openPage(id, button) {
+  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
 
-    document.getElementById(pageId).classList.add("active");
+  document.querySelectorAll("nav button").forEach(b => b.classList.remove("active"));
+  button.classList.add("active");
 
-    document.querySelectorAll("nav button").forEach(btn => {
-      btn.classList.remove("active");
-    });
+  if (id === "leagues" && leagueData.length === 0) loadLeagues();
+}
 
-    button.classList.add("active");
+async function getData(type) {
+  const response = await fetch(`${API}?type=${type}`);
+  const data = await response.json();
 
-    if (pageId === "leagues" && leagueData.length === 0) {
-      loadLeagues();
-    }
+  if (!response.ok) {
+    throw new Error(data.error || "API request failed");
   }
 
-  async function getData(type) {
-    const response = await fetch(`${API_BASE}?type=${type}`);
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error || "API request failed");
-    }
-
-    if (data.errors && Object.keys(data.errors).length > 0) {
-      throw new Error(JSON.stringify(data.errors));
-    }
-
-    return Array.isArray(data.response) ? data.response : [];
+  if (data.errors && Object.keys(data.errors).length) {
+    throw new Error(JSON.stringify(data.errors));
   }
 
-  function safeText(value) {
-    return String(value ?? "");
+  return Array.isArray(data.response) ? data.response : [];
+}
+
+function renderMatches(matches, elementId) {
+  const box = document.getElementById(elementId);
+  box.innerHTML = "";
+
+  if (!matches.length) {
+    box.className = "message";
+    box.textContent = "No matches available.";
+    return;
   }
 
-  function renderMatches(matches, containerId) {
-    const container = document.getElementById(containerId);
-    container.innerHTML = "";
+  box.className = "";
 
-    if (!matches.length) {
-      container.textContent = "No matches available.";
-      container.className = "status-message";
-      return;
-    }
+  matches.forEach(match => {
+    const home = match.teams?.home || {};
+    const away = match.teams?.away || {};
+    const goals = match.goals || {};
+    const status = match.fixture?.status || {};
 
-    container.className = "";
+    const isLive = ["1H","2H","HT","ET","P","LIVE","BT"].includes(status.short);
 
-    matches.forEach(match => {
-      const home = match.teams?.home || {};
-      const away = match.teams?.away || {};
-      const goals = match.goals || {};
-      const status = match.fixture?.status || {};
-      const isLive = ["1H", "2H", "HT", "ET", "P", "LIVE", "BT"].includes(status.short);
+    const row = document.createElement("div");
+    row.className = "match";
 
-      const row = document.createElement("div");
-      row.className = "match-row";
+    const homeEl = document.createElement("div");
+    homeEl.className = "team";
 
-      const homeTeam = document.createElement("div");
-      homeTeam.className = "team";
+    const homeImg = document.createElement("img");
+    homeImg.src = home.logo || "";
+    homeImg.alt = "";
 
-      const homeLogo = document.createElement("img");
-      homeLogo.src = home.logo || "";
-      homeLogo.alt = "";
+    const homeName = document.createElement("span");
+    homeName.textContent = home.name || "Home";
 
-      const homeName = document.createElement("span");
-      homeName.textContent = safeText(home.name);
+    homeEl.append(homeImg, homeName);
 
-      homeTeam.append(homeLogo, homeName);
+    const awayEl = document.createElement("div");
+    awayEl.className = "team away";
 
-      const awayTeam = document.createElement("div");
-      awayTeam.className = "team";
+    const awayImg = document.createElement("img");
+    awayImg.src = away.logo || "";
+    awayImg.alt = "";
 
-      const awayLogo = document.createElement("img");
-      awayLogo.src = away.logo || "";
-      awayLogo.alt = "";
+    const awayName = document.createElement("span");
+    awayName.textContent = away.name || "Away";
 
-      const awayName = document.createElement("span");
-      awayName.textContent = safeText(away.name);
+    awayEl.append(awayName, awayImg);
 
-      awayTeam.append(awayLogo, awayName);
+    const score = document.createElement("div");
+    score.className = "score";
 
-      const score = document.createElement("div");
-      score.className = "match-score";
+    score.textContent =
+      goals.home !== null && goals.away !== null
+        ? `${goals.home} - ${goals.away}`
+        : "VS";
 
-      if (goals.home !== null && goals.away !== null) {
-        score.textContent = `${goals.home} - ${goals.away}`;
-      } else {
-        score.textContent = "VS";
-      }
+    const detail = document.createElement("small");
+    detail.textContent = isLive
+      ? `LIVE ${status.elapsed ?? ""}'`
+      : (status.long || status.short || "Scheduled");
 
-      const detail = document.createElement("small");
+    if (isLive) detail.className = "live";
 
-      if (isLive) {
-        detail.textContent = `LIVE ${status.elapsed ?? ""}'`;
-        detail.className = "live-label";
-      } else {
-        detail.textContent = status.long || status.short || "Scheduled";
-      }
+    score.appendChild(detail);
+    row.append(homeEl, score, awayEl);
+    box.appendChild(row);
+  });
+}
 
-      score.appendChild(detail);
+async function loadFixtures() {
+  const box = document.getElementById("todayMatches");
+  box.textContent = "Loading matches...";
 
-      row.append(homeTeam, score, awayTeam);
-      container.appendChild(row);
-    });
+  try {
+    fixtureData = await getData("fixtures");
+    renderMatches(fixtureData, "todayMatches");
+    document.getElementById("todayCount").textContent = fixtureData.length;
+  } catch (error) {
+    box.textContent = "Error: " + error.message;
   }
+}
 
-  async function loadFixtures() {
-    const container = document.getElementById("todayMatches");
-    container.textContent = "Loading matches...";
+async function loadLive() {
+  const box = document.getElementById("liveMatches");
+  box.textContent = "Loading live matches...";
 
-    try {
-      fixtureData = await getData("fixtures");
-      renderMatches(fixtureData, "todayMatches");
-      document.getElementById("todayCount").textContent = fixtureData.length;
-    } catch (error) {
-      container.textContent = "Failed to load matches: " + error.message;
-    }
+  try {
+    liveData = await getData("livescores");
+    renderMatches(liveData, "liveMatches");
+    document.getElementById("liveCount").textContent = liveData.length;
+  } catch (error) {
+    box.textContent = "Error: " + error.message;
   }
+}
 
-  async function loadLive() {
-    const container = document.getElementById("liveMatches");
-    container.textContent = "Loading live matches...";
+function flag(code) {
+  if (!code || code.length !== 2) return "🌍";
+  return String.fromCodePoint(...[...code.toUpperCase()].map(c => 127397 + c.charCodeAt(0)));
+}
 
-    try {
-      liveData = await getData("livescores");
-      renderMatches(liveData, "liveMatches");
-      document.getElementById("liveCount").textContent = liveData.length;
-    } catch (error) {
-      container.textContent = "Failed to load live matches: " + error.message;
-    }
-  }
+function groupLeagues(data) {
+  const groups = {};
 
-  function countryFlag(code) {
-    if (!code || code.length !== 2) return "🌍";
+  data.forEach(item => {
+    const country = item.country?.name || "International";
 
-    return String.fromCodePoint(
-      ...[...code.toUpperCase()].map(char => 127397 + char.charCodeAt(0))
-    );
-  }
-
-  function groupLeagues(data) {
-    const groups = {};
-
-    data.forEach(item => {
-      const country = item.country?.name || "International";
-
-      if (!groups[country]) {
-        groups[country] = {
-          code: item.country?.code || "",
-          leagues: []
-        };
-      }
-
-      groups[country].leagues.push(item);
-    });
-
-    return groups;
-  }
-
-  function renderLeagues(groups) {
-    const container = document.getElementById("leaguesList");
-    container.innerHTML = "";
-
-    const countries = Object.keys(groups).sort();
-
-    if (!countries.length) {
-      container.textContent = "No leagues found.";
-      container.className = "status-message";
-      return;
+    if (!groups[country]) {
+      groups[country] = {
+        code: item.country?.code || "",
+        leagues: []
+      };
     }
 
-    container.className = "";
+    groups[country].leagues.push(item);
+  });
 
-    countries.forEach(country => {
-      const group = groups[country];
+  return groups;
+}
 
-      const card = document.createElement("details");
-      card.className = "country-card";
+function renderLeagues(groups) {
+  const box = document.getElementById("leaguesList");
+  box.innerHTML = "";
 
-      const heading = document.createElement("summary");
+  const countries = Object.keys(groups).sort();
 
-      const title = document.createElement("span");
-      title.textContent = `${countryFlag(group.code)}  ${country}`;
-
-      const count = document.createElement("span");
-      count.className = "country-count";
-      count.textContent = `${group.leagues.length} leagues`;
-
-      heading.append(title, count);
-
-      const list = document.createElement("div");
-
-      group.leagues
-        .sort((a, b) => safeText(a.league?.name).localeCompare(safeText(b.league?.name)))
-        .forEach(item => {
-          const row = document.createElement("div");
-          row.className = "league-row";
-
-          const logo = document.createElement("img");
-          logo.src = item.league?.logo || "";
-          logo.alt = "";
-          logo.onerror = () => {
-            logo.style.display = "none";
-          };
-
-          const info = document.createElement("div");
-          info.className = "league-info";
-
-          const name = document.createElement("div");
-          name.textContent = item.league?.name || "Unknown league";
-
-          const type = document.createElement("small");
-          type.textContent = item.league?.type || "League";
-
-          info.append(name, type);
-          row.append(logo, info);
-          list.appendChild(row);
-        });
-
-      card.append(heading, list);
-      container.appendChild(card);
-    });
+  if (!countries.length) {
+    box.className = "message";
+    box.textContent = "No leagues found.";
+    return;
   }
 
-  async function loadLeagues() {
-    const container = document.getElementById("leaguesList");
-    container.textContent = "Loading leagues...";
+  box.className = "";
 
-    try {
-      leagueData = await getData("leagues");
+  countries.forEach(country => {
+    const group = groups[country];
+    const card = document.createElement("details");
+    card.className = "country";
 
-      const groups = groupLeagues(leagueData);
-      renderLeagues(groups);
+    const summary = document.createElement("summary");
 
-      document.getElementById("countryCount").textContent =
-        Object.keys(groups).length;
+    const title = document.createElement("span");
+    title.textContent = `${flag(group.code)}  ${country}`;
 
-      document.getElementById("leagueCount").textContent =
-        leagueData.length;
+    const count = document.createElement("span");
+    count.className = "muted small";
+    count.textContent = `${group.leagues.length} leagues`;
 
-    } catch (error) {
-      container.textContent = "Failed to load leagues: " + error.message;
-    }
+    summary.append(title, count);
+
+    const list = document.createElement("div");
+
+    group.leagues
+      .sort((a,b) => (a.league?.name || "").localeCompare(b.league?.name || ""))
+      .forEach(item => {
+        const row = document.createElement("div");
+        row.className = "league";
+
+        const img = document.createElement("img");
+        img.src = item.league?.logo || "";
+        img.alt = "";
+        img.onerror = () => img.style.display = "none";
+
+        const info = document.createElement("div");
+        const name = document.createElement("div");
+        name.textContent = item.league?.name || "Unknown league";
+
+        const type = document.createElement("small");
+        type.textContent = item.league?.type || "Competition";
+
+        info.append(name, type);
+        row.append(img, info);
+        list.appendChild(row);
+      });
+
+    card.append(summary, list);
+    box.appendChild(card);
+  });
+}
+
+async function loadLeagues() {
+  const box = document.getElementById("leaguesList");
+  box.textContent = "Loading leagues...";
+
+  try {
+    leagueData = await getData("leagues");
+    const groups = groupLeagues(leagueData);
+
+    renderLeagues(groups);
+
+    document.getElementById("countryCount").textContent =
+      Object.keys(groups).length;
+
+    document.getElementById("leagueCount").textContent =
+      leagueData.length;
+
+  } catch (error) {
+    box.textContent = "Error loading leagues: " + error.message;
   }
+}
 
-  function filterLeagues() {
-    const query = document.getElementById("leagueSearch")
-      .value.trim().toLowerCase();
+function filterLeagues() {
+  const query = document.getElementById("leagueSearch").value.toLowerCase().trim();
 
-    const filtered = leagueData.filter(item => {
-      const country = safeText(item.country?.name).toLowerCase();
-      const league = safeText(item.league?.name).toLowerCase();
+  const filtered = leagueData.filter(item => {
+    const country = (item.country?.name || "").toLowerCase();
+    const league = (item.league?.name || "").toLowerCase();
 
-      return country.includes(query) || league.includes(query);
-    });
+    return country.includes(query) || league.includes(query);
+  });
 
-    renderLeagues(groupLeagues(filtered));
-  }
+  renderLeagues(groupLeagues(filtered));
+}
 
-  async function initialize() {
-    await Promise.all([
-      loadFixtures(),
-      loadLive()
-    ]);
+async function initialize() {
+  await Promise.all([loadFixtures(), loadLive()]);
+  loadLeagues();
+}
 
-    loadLeagues();
-  }
-
-  initialize();
-
-  // Refresh live scores every 60 seconds.
-  setInterval(loadLive, 60000);
+initialize();
+setInterval(loadLive, 60000);
 </script>
 
 </body>
