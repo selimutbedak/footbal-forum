@@ -2,505 +2,155 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FOOTBALL FORUM</title>
-
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#090909">
+<title>Football Forum</title>
 <style>
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-body {
-  font-family: Arial, sans-serif;
-  background: #f5f6f7;
-  color: #20252b;
-}
-
-header {
-  background: #fff;
-  border-bottom: 1px solid #ddd;
-  padding: 18px 6%;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.logo {
-  font-size: 22px;
-  font-weight: 800;
-  letter-spacing: -1px;
-}
-
-.logo span {
-  color: #23834d;
-}
-
-nav {
-  display: flex;
-  gap: 22px;
-  flex-wrap: wrap;
-}
-
-nav button {
-  border: none;
-  background: none;
-  font-size: 14px;
-  color: #555;
-  cursor: pointer;
-  padding: 8px 0;
-}
-
-nav button.active {
-  color: #23834d;
-  font-weight: bold;
-  border-bottom: 2px solid #23834d;
-}
-
-main {
-  max-width: 1200px;
-  margin: 30px auto;
-  padding: 0 20px;
-}
-
-.heading {
-  margin-bottom: 25px;
-}
-
-.heading h1 {
-  font-size: 27px;
-  margin-bottom: 8px;
-}
-
-.heading p {
-  color: #777;
-  font-size: 14px;
-}
-
-.status {
-  display: inline-block;
-  background: #e8f5ed;
-  color: #23834d;
-  padding: 6px 10px;
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: bold;
-  margin-top: 12px;
-}
-
-.stats {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 15px;
-  margin-bottom: 25px;
-}
-
-.card {
-  background: white;
-  border: 1px solid #e5e5e5;
-  border-radius: 7px;
-  padding: 20px;
-}
-
-.card small {
-  color: #777;
-}
-
-.card h2 {
-  font-size: 27px;
-  margin-top: 12px;
-}
-
-.section {
-  background: white;
-  border: 1px solid #e5e5e5;
-  border-radius: 7px;
-  margin-bottom: 22px;
-  overflow: hidden;
-}
-
-.section-title {
-  padding: 18px 20px;
-  border-bottom: 1px solid #eee;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-}
-
-.section-title h2 {
-  font-size: 17px;
-}
-
-.section-title span {
-  font-size: 12px;
-  color: #888;
-}
-
-.toolbar {
-  display: flex;
-  gap: 10px;
-  padding: 15px 20px;
-  flex-wrap: wrap;
-}
-
-input, select {
-  padding: 11px;
-  border: 1px solid #ddd;
-  border-radius: 5px;
-  background: white;
-  font-size: 13px;
-}
-
-input {
-  flex: 1;
-  min-width: 150px;
-}
-
-.table-wrap {
-  overflow-x: auto;
-}
-
-table {
-  border-collapse: collapse;
-  width: 100%;
-  white-space: nowrap;
-  font-size: 13px;
-}
-
-th {
-  background: #fafafa;
-  color: #777;
-  font-weight: 600;
-}
-
-th, td {
-  text-align: left;
-  padding: 14px 16px;
-  border-bottom: 1px solid #eee;
-}
-
-td {
-  color: #343a40;
-}
-
-tr:last-child td {
-  border-bottom: none;
-}
-
-tr:hover td {
-  background: #fafcfb;
-}
-
-.green {
-  color: #23834d;
-  font-weight: bold;
-}
-
-.live-dot {
-  color: #d84949;
-  font-weight: bold;
-}
-
-.view {
-  display: none;
-}
-
-.view.active {
-  display: block;
-}
-
-footer {
-  text-align: center;
-  color: #888;
-  padding: 30px;
-  font-size: 12px;
-}
-
-@media(max-width:700px) {
-  header {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 15px;
-    padding: 17px 20px;
-  }
-
-  nav {
-    gap: 17px;
-  }
-
-  .stats {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .heading h1 {
-    font-size: 23px;
-  }
-
-  main {
-    padding: 0 13px;
-  }
+:root{--bg:#090909;--panel:#151515;--panel2:#1d1d1d;--line:#292929;--red:#e32936;--muted:#929292;--green:#35cf83}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:#f5f5f5;font-family:Arial,Helvetica,sans-serif}
+button,input,select{font:inherit}
+button{cursor:pointer}
+header{height:68px;padding:0 5%;display:flex;align-items:center;justify-content:space-between;background:#101010;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10}
+.logo{font-size:22px;font-weight:900;letter-spacing:-1px}
+.logo span{color:var(--red)}
+nav{display:flex;gap:22px}
+nav button{border:0;background:none;color:#999;font-weight:bold;font-size:13px}
+nav button.active{color:#fff}
+.container{width:min(1120px,92%);margin:24px auto}
+.page{display:none}
+.page.active{display:block}
+.heading{font-size:20px;font-weight:900;margin:28px 0 15px;display:flex;align-items:center;gap:10px}
+.heading:before{content:"";width:5px;height:22px;border-radius:5px;background:var(--red)}
+.search,.date-input{width:100%;padding:12px 14px;border:1px solid var(--line);background:var(--panel);color:#fff;border-radius:8px;margin-bottom:14px}
+.muted{color:var(--muted)}
+.loading,.empty{text-align:center;padding:24px;color:var(--muted)}
+.error{padding:15px;color:#ff8888}
+.poster-shell{width:100%;overflow:hidden;border:1px solid #542026;border-radius:18px;background:#170d0f}
+.poster-track{display:flex;transition:transform .4s ease}
+.poster{min-width:100%;height:205px;padding:17px 22px;position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;background:repeating-linear-gradient(72deg,transparent 0 75px,rgba(255,255,255,.035) 75px 125px),radial-gradient(ellipse at center,#45151c 0%,#210d10 62%,#100d0e 100%)}
+.poster:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,30,50,.07),transparent);pointer-events:none}
+.poster-top,.poster-main,.poster-bottom{position:relative;z-index:1}
+.poster-top,.poster-bottom{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:10px;letter-spacing:2px;font-weight:bold}
+.poster-label{color:#ff6570}
+.poster-main{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;text-align:center;gap:12px}
+.poster-team{min-width:0}
+.poster-logo{width:54px;height:54px;border-radius:50%;object-fit:contain;background:#202020;border:2px solid #666;padding:5px;margin:0 auto 6px;display:block}
+.poster-initial{display:grid;place-items:center;color:white;font-size:18px;font-weight:900}
+.poster-name{font-size:12px;font-weight:bold;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.poster-vs{font-size:22px;color:#ff5a65;font-weight:900}
+.poster-info{font-size:11px;text-align:center;color:#ddd;margin-top:6px}
+.poster-bottom{color:#bbb;letter-spacing:1px}
+.slider-dots{display:flex;justify-content:center;gap:7px;flex-wrap:wrap;margin:12px 0 25px}
+.slider-dot{width:7px;height:7px;border:0;border-radius:9px;background:#555;padding:0}
+.slider-dot.active{width:22px;background:var(--red)}
+.match-list{display:grid;gap:8px}
+.match-row{display:grid;grid-template-columns:75px 1fr 60px;gap:10px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:12px;cursor:pointer}
+.match-row:hover{border-color:#743039}
+.match-time{font-size:11px;color:var(--muted)}
+.match-teams{display:grid;gap:8px;font-size:13px;font-weight:bold}
+.team-line{display:flex;align-items:center;gap:8px;min-width:0}
+.mini-logo{width:20px;height:20px;object-fit:contain}
+.team-line span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.match-score{text-align:right;font-weight:900;line-height:1.8}
+.live{color:var(--green);font-size:10px}
+.country-block{margin-bottom:18px}
+.country-title{background:#191919;padding:12px;border:1px solid var(--line);border-radius:8px 8px 0 0;font-weight:bold;font-size:13px}
+.league-row{display:flex;justify-content:space-between;align-items:center;background:#111;padding:12px 14px;border:1px solid var(--line);border-top:0;font-size:13px;cursor:pointer}
+.league-row:hover{background:#202020}
+.league-row:last-child{border-radius:0 0 8px 8px}
+.back{border:1px solid var(--line);background:var(--panel);color:white;border-radius:7px;padding:9px 13px;margin-bottom:15px}
+.detail-score{text-align:center;padding:20px;background:linear-gradient(120deg,#211013,#151515);border:1px solid #482126;border-radius:12px}
+.detail-teams{display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:14px;font-weight:bold;margin-top:12px}
+.detail-logo{width:48px;height:48px;object-fit:contain;display:block;margin:0 auto 7px}
+.score{font-size:32px;font-weight:900;margin:10px}
+.tabs{display:flex;gap:7px;overflow-x:auto;padding:14px 0}
+.tab{white-space:nowrap;background:var(--panel);border:1px solid var(--line);color:#aaa;padding:9px 12px;border-radius:7px;font-size:11px}
+.tab.active{background:var(--red);border-color:var(--red);color:white}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:14px;margin-bottom:10px}
+.stat-row{margin:14px 0}
+.stat-label{display:flex;justify-content:space-between;gap:8px;font-size:12px;margin-bottom:7px}
+.stat-bars{height:7px;display:flex;background:#333;border-radius:8px;overflow:hidden}
+.stat-home{background:var(--red)}
+.stat-away{background:#777}
+.player-row{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);font-size:12px}
+.rating{color:#ffd36a;font-weight:bold}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:440px;font-size:11px}
+td,th{padding:10px 7px;text-align:center;border-bottom:1px solid var(--line)}
+th{color:var(--muted);font-weight:normal}
+td:first-child,th:first-child{text-align:left}
+.event-row{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);font-size:12px}
+.event-minute{color:#ff6570;font-weight:bold;min-width:35px}
+.event-icon{width:20px}
+footer{text-align:center;padding:25px;border-top:1px solid var(--line);color:var(--muted);font-size:11px;margin-top:40px}
+@media(max-width:650px){
+header{height:60px;padding:0 4%}.logo{font-size:18px}nav{gap:12px}
+nav button{font-size:10px;padding:5px 0}.container{margin-top:17px}
+.poster{height:190px;padding:14px}.poster-logo{width:46px;height:46px}
+.poster-name{font-size:10px}.match-row{grid-template-columns:57px 1fr 42px;padding:10px 8px;gap:7px}
+.match-teams{font-size:11px}
 }
 </style>
 </head>
-
 <body>
-
 <header>
-  <div class="logo">FOOTBALL <span>FORUM</span></div>
-
-  <nav>
-    <button class="active" onclick="showPage('overview',this)">Overview</button>
-    <button onclick="showPage('live',this)">Live Scores</button>
-    <button onclick="showPage('players',this)">Players</button>
-  </nav>
+<div class="logo">FOOTBALL<span>FORUM</span></div>
+<nav>
+<button class="active" data-page="home">HOME</button>
+<button data-page="matches">MATCHES</button>
+<button data-page="leagues">LEAGUES</button>
+</nav>
 </header>
 
-<main>
+<main class="container">
+<section id="home" class="page active">
+<div class="heading">FEATURED MATCHES</div>
+<div class="poster-shell"><div id="posterTrack" class="poster-track"><div class="poster"><div class="loading">Loading...</div></div></div></div>
+<div id="posterDots" class="slider-dots"></div>
+<div class="heading">LIVE MATCHES</div>
+<div id="liveMatches" class="match-list"><div class="loading">Loading...</div></div>
+<div class="heading">TODAY'S MATCHES</div>
+<div id="todayMatches" class="match-list"><div class="loading">Loading...</div></div>
+<div class="heading">POPULAR LEAGUES</div>
+<div id="homeLeagues"></div>
+</section>
 
-<!-- OVERVIEW -->
+<section id="matches" class="page">
+<div class="heading">ALL MATCHES</div>
+<input id="matchDate" class="date-input" type="date">
+<div id="allMatches" class="match-list"></div>
+</section>
 
-<div id="overview" class="view active">
+<section id="leagues" class="page">
+<div class="heading">LEAGUES BY COUNTRY</div>
+<input id="leagueSearch" class="search" placeholder="Search league or country...">
+<div id="leagueList"></div>
+</section>
 
-  <div class="heading">
-    <h1>Football Overview</h1>
-    <p>Global football statistics and match center.</p>
-    <div class="status">DEMO DATA · API NOT CONNECTED</div>
-  </div>
-
-  <div class="stats">
-    <div class="card">
-      <small>Leagues</small>
-      <h2>Global</h2>
-    </div>
-
-    <div class="card">
-      <small>Matches</small>
-      <h2>--</h2>
-    </div>
-
-    <div class="card">
-      <small>Teams</small>
-      <h2>--</h2>
-    </div>
-
-    <div class="card">
-      <small>Players</small>
-      <h2>--</h2>
-    </div>
-  </div>
-
-  <div class="section">
-    <div class="section-title">
-      <h2>Match Center</h2>
-      <span>Demo fixtures</span>
-    </div>
-
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Competition</th>
-            <th>Home</th>
-            <th>Score</th>
-            <th>Away</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          <tr>
-            <td>Premier League</td>
-            <td>Arsenal</td>
-            <td>2 - 1</td>
-            <td>Chelsea</td>
-            <td>Demo</td>
-          </tr>
-          <tr>
-            <td>La Liga</td>
-            <td>Barcelona</td>
-            <td>1 - 0</td>
-            <td>Real Madrid</td>
-            <td>Demo</td>
-          </tr>
-          <tr>
-            <td>Serie A</td>
-            <td>Inter</td>
-            <td>2 - 2</td>
-            <td>Milan</td>
-            <td>Demo</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
+<section id="leagueDetail" class="page">
+<button class="back" onclick="showPage('leagues')">← Back</button>
+<div id="leagueHeading" class="heading"></div>
+<div class="tabs">
+<button class="tab active" data-league-tab="matches">Matches</button>
+<button class="tab" data-league-tab="standings">Standings</button>
 </div>
+<div id="leagueContent"></div>
+</section>
 
-<!-- LIVE SCORES -->
-
-<div id="live" class="view">
-
-  <div class="heading">
-    <h1>Live Scores</h1>
-    <p>Live football matches around the world.</p>
-    <div class="status">WAITING FOR API CONNECTION</div>
-  </div>
-
-  <div class="section">
-    <div class="section-title">
-      <h2>Live Matches</h2>
-      <span>Sportmonks API</span>
-    </div>
-
-    <div class="card">
-      Live match data will appear here after API integration.
-    </div>
-  </div>
-
+<section id="matchDetail" class="page">
+<button class="back" onclick="showPage('home')">← Back</button>
+<div id="matchHeading"></div>
+<div class="tabs" id="matchTabs">
+<button class="tab active" data-match-tab="statistics">Statistics</button>
+<button class="tab" data-match-tab="lineups">Lineups</button>
+<button class="tab" data-match-tab="players">Ratings</button>
+<button class="tab" data-match-tab="timeline">Timeline</button>
+<button class="tab" data-match-tab="h2h">H2H</button>
+<button class="tab" data-match-tab="form">Team Form</button>
+<button class="tab" data-match-tab="insights">Insights</button>
 </div>
-
-<!-- PLAYERS -->
-
-<div id="players" class="view">
-
-  <div class="heading">
-    <h1>Player Statistics</h1>
-    <p>Player performance, advanced metrics and season analysis.</p>
-    <div class="status">DEMO DATA · API NOT CONNECTED</div>
-  </div>
-
-  <div class="stats">
-    <div class="card">
-      <small>Total Players</small>
-      <h2>--</h2>
-    </div>
-    <div class="card">
-      <small>Goals</small>
-      <h2>--</h2>
-    </div>
-    <div class="card">
-      <small>Assists</small>
-      <h2>--</h2>
-    </div>
-    <div class="card">
-      <small>Minutes Played</small>
-      <h2>--</h2>
-    </div>
-  </div>
-
-  <div class="section">
-
-    <div class="section-title">
-      <h2>Player Performance</h2>
-      <span>Example statistics</span>
-    </div>
-
-    <div class="toolbar">
-      <input
-        type="text"
-        id="searchPlayer"
-        placeholder="Search player..."
-        oninput="filterPlayers()"
-      >
-
-      <select id="positionFilter" onchange="filterPlayers()">
-        <option value="All">All Positions</option>
-        <option value="Forward">Forward</option>
-        <option value="Midfielder">Midfielder</option>
-        <option value="Defender">Defender</option>
-      </select>
-    </div>
-
-    <div class="table-wrap">
-      <table id="playerTable">
-        <thead>
-          <tr>
-            <th>Player</th>
-            <th>Position</th>
-            <th>Matches</th>
-            <th>Goals</th>
-            <th>Assists</th>
-            <th>Minutes</th>
-            <th>Rating</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          <tr>
-            <td>Example Player 1</td>
-            <td>Forward</td>
-            <td>--</td>
-            <td>--</td>
-            <td>--</td>
-            <td>--</td>
-            <td>--</td>
-          </tr>
-          <tr>
-            <td>Example Player 2</td>
-            <td>Midfielder</td>
-            <td>--</td>
-            <td>--</td>
-            <td>--</td>
-            <td>--</td>
-            <td>--</td>
-          </tr>
-          <tr>
-            <td>Example Player 3</td>
-            <td>Defender</td>
-            <td>--</td>
-            <td>--</td>
-            <td>--</td>
-            <td>--</td>
-            <td>--</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-  </div>
-
-</div>
-
+<div id="matchContent"></div>
+</section>
 </main>
-
-<footer>
-  FOOTBALL FORUM · Global Football Data Platform
-</footer>
-
-<script>
-function showPage(page, button) {
-  document.querySelectorAll('.view').forEach(el => {
-    el.classList.remove('active');
-  });
-
-  document.getElementById(page).classList.add('active');
-
-  document.querySelectorAll('nav button').forEach(el => {
-    el.classList.remove('active');
-  });
-
-  button.classList.add('active');
-}
-
-function filterPlayers() {
-  const search = document.getElementById('searchPlayer')
-    .value.toLowerCase();
-
-  const position = document.getElementById('positionFilter').value;
-
-  document.querySelectorAll('#playerTable tbody tr').forEach(row => {
-    const name = row.cells[0].textContent.toLowerCase();
-    const role = row.cells[1].textContent;
-
-    const matchName = name.includes(search);
-    const matchPosition = position === 'All' || role === position;
-
-    row.style.display = matchName && matchPosition ? '' : 'none';
-  });
-}
-</script>
-
-</body>
-</html>
+<footer>FOOTBALL FORUM · MULTI SOURCE FOOTBALL DATA</footer>
